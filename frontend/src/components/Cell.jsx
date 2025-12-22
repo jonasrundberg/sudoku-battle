@@ -12,6 +12,8 @@ function Cell({
   isHighlighted,
   isConflict,
   isSameNumber,
+  isMistake,
+  isWrong,
   row,
   col,
   onClick,
@@ -24,32 +26,40 @@ function Cell({
     (row === 2 || row === 5) ? 'border-b-2 border-b-gray-800' : 'border-b border-b-gray-300',
   ].join(' ')
 
-  // Background color based on state
-  let bgColor = 'bg-white'
-  if (isConflict) {
-    bgColor = 'bg-red-100'
+  // Background color based on state - using inline styles to avoid Tailwind JIT issues
+  let bgStyle = {}
+  if (isMistake) {
+    bgStyle = { backgroundColor: '#fca5a5' } // red-300
   } else if (isSelected) {
-    bgColor = 'bg-blue-200'
+    bgStyle = { backgroundColor: isWrong ? '#93c5fd' : '#bfdbfe' } // blue-300 or blue-200
+  } else if (isWrong) {
+    bgStyle = { backgroundColor: '#fef2f2' } // red-50
+  } else if (isConflict) {
+    bgStyle = { backgroundColor: '#fee2e2' } // red-100
   } else if (isSameNumber && value !== 0) {
-    bgColor = 'bg-blue-100'
+    bgStyle = { backgroundColor: '#dbeafe' } // blue-100
   } else if (isHighlighted) {
-    bgColor = 'bg-gray-100'
+    bgStyle = { backgroundColor: '#eff6ff' } // blue-50
   }
 
-  // Text color based on whether it's a given number or user input
-  const textColor = isGiven ? 'text-gray-900' : 'text-blue-600'
+  // Text color based on whether it's a given number, wrong, or user input
+  let textColor = isGiven ? 'text-gray-900' : 'text-blue-600'
+  if (isWrong) {
+    textColor = 'text-red-600'
+  }
   const fontWeight = isGiven ? 'font-bold' : 'font-semibold'
 
   return (
     <button
       type="button"
       onClick={() => onClick(row, col)}
+      style={bgStyle}
       className={`
         sudoku-cell
         ${borderClasses}
-        ${bgColor}
         ${textColor}
         ${fontWeight}
+        ${isMistake ? 'animate-pulse' : ''}
         ${isConflict ? 'conflict-pulse' : ''}
         focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-inset
         no-select
@@ -69,6 +79,8 @@ export default memo(Cell, (prevProps, nextProps) => {
     prevProps.isSelected === nextProps.isSelected &&
     prevProps.isHighlighted === nextProps.isHighlighted &&
     prevProps.isConflict === nextProps.isConflict &&
-    prevProps.isSameNumber === nextProps.isSameNumber
+    prevProps.isSameNumber === nextProps.isSameNumber &&
+    prevProps.isMistake === nextProps.isMistake &&
+    prevProps.isWrong === nextProps.isWrong
   )
 })

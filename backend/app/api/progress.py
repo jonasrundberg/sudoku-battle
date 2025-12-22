@@ -33,6 +33,8 @@ async def get_progress(passkey: str):
         time_seconds=progress["time_seconds"],
         is_completed=progress.get("is_completed", False),
         is_paused=progress.get("is_paused", False),
+        mistakes=progress.get("mistakes", 0),
+        is_failed=progress.get("is_failed", False),
     )
 
 
@@ -50,6 +52,9 @@ async def save_progress(request: ProgressRequest):
     # Ensure user exists
     firestore.get_or_create_user(request.passkey)
 
+    # Check if failed (3 mistakes)
+    is_failed = request.mistakes >= 3
+
     progress = firestore.save_progress(
         passkey=request.passkey,
         puzzle_date=date.today(),
@@ -57,6 +62,8 @@ async def save_progress(request: ProgressRequest):
         time_seconds=request.time_seconds,
         is_paused=request.is_paused,
         is_completed=False,
+        mistakes=request.mistakes,
+        is_failed=is_failed,
     )
 
     return ProgressResponse(
@@ -65,6 +72,8 @@ async def save_progress(request: ProgressRequest):
         time_seconds=progress["time_seconds"],
         is_completed=progress["is_completed"],
         is_paused=progress["is_paused"],
+        mistakes=progress.get("mistakes", 0),
+        is_failed=progress.get("is_failed", False),
     )
 
 

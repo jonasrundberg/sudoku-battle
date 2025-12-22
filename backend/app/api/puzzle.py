@@ -22,6 +22,7 @@ async def get_today_puzzle():
     return PuzzleResponse(
         date=puzzle_data["date"],
         puzzle=puzzle_data["puzzle"],
+        solution=puzzle_data["solution"],
         difficulty=puzzle_data["difficulty"],
         day_of_week=puzzle_data["day_of_week"],
     )

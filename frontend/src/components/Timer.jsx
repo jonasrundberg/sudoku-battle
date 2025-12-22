@@ -3,7 +3,7 @@
  * Displays elapsed time in MM:SS format.
  */
 
-export default function Timer({ time, isPaused, isCompleted, onPauseToggle }) {
+export default function Timer({ time, isPaused, isCompleted, isFailed, onPauseToggle }) {
   // Format time as MM:SS
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60)
@@ -17,7 +17,7 @@ export default function Timer({ time, isPaused, isCompleted, onPauseToggle }) {
         {formatTime(time)}
       </div>
       
-      {!isCompleted && (
+      {!isCompleted && !isFailed && (
         <button
           type="button"
           onClick={onPauseToggle}

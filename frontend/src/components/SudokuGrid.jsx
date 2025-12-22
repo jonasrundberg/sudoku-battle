@@ -9,8 +9,10 @@ export default function SudokuGrid({
   board,
   originalBoard,
   conflicts,
+  wrongCells,
   selectedCell,
   onCellClick,
+  mistakeCell,
 }) {
   // Create a Set of conflict positions for quick lookup
   const conflictSet = new Set(
@@ -18,24 +20,18 @@ export default function SudokuGrid({
   )
 
   // Get the value of the selected cell for highlighting same numbers
+  // Only highlight same numbers if selected cell has a value (like sudoku.com)
   const selectedValue = selectedCell
     ? board[selectedCell.row][selectedCell.col]
     : null
 
-  // Check if a cell is in the same row, column, or 3x3 box as selected
+  // Check if a cell is in the same row or column as selected (no 3x3 box, like sudoku.com)
   const isHighlighted = (row, col) => {
     if (!selectedCell) return false
     if (row === selectedCell.row && col === selectedCell.col) return false
 
-    // Same row or column
-    if (row === selectedCell.row || col === selectedCell.col) return true
-
-    // Same 3x3 box
-    const boxRow = Math.floor(row / 3)
-    const boxCol = Math.floor(col / 3)
-    const selectedBoxRow = Math.floor(selectedCell.row / 3)
-    const selectedBoxCol = Math.floor(selectedCell.col / 3)
-    return boxRow === selectedBoxRow && boxCol === selectedBoxCol
+    // Same row or column only
+    return row === selectedCell.row || col === selectedCell.col
   }
 
   const handleCellClick = (row, col) => {
@@ -64,6 +60,10 @@ export default function SudokuGrid({
                 selectedValue !== 0 &&
                 cellValue === selectedValue
               }
+              isMistake={
+                mistakeCell?.row === rowIndex && mistakeCell?.col === colIndex
+              }
+              isWrong={wrongCells?.has(`${rowIndex},${colIndex}`)}
               row={rowIndex}
               col={colIndex}
               onClick={handleCellClick}

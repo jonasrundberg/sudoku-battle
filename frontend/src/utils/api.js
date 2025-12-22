@@ -39,7 +39,7 @@ export async function getProgress(passkey) {
   return apiRequest(`/progress/${passkey}`)
 }
 
-export async function saveProgress(passkey, board, timeSeconds, isPaused = false) {
+export async function saveProgress(passkey, board, timeSeconds, isPaused = false, mistakes = 0) {
   return apiRequest('/progress', {
     method: 'POST',
     body: JSON.stringify({
@@ -47,6 +47,7 @@ export async function saveProgress(passkey, board, timeSeconds, isPaused = false
       board,
       time_seconds: timeSeconds,
       is_paused: isPaused,
+      mistakes,
     }),
   })
 }

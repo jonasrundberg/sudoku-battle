@@ -11,6 +11,7 @@ class PuzzleResponse(BaseModel):
     """Response containing today's puzzle."""
     date: str = Field(..., description="Puzzle date in YYYY-MM-DD format")
     puzzle: list[list[int]] = Field(..., description="9x9 puzzle grid (0 = empty)")
+    solution: list[list[int]] = Field(..., description="9x9 solution grid")
     difficulty: str = Field(..., description="Difficulty level: easy, medium, hard, expert")
     day_of_week: str = Field(..., description="Day of the week")
 
@@ -23,6 +24,7 @@ class ProgressRequest(BaseModel):
     board: list[list[int]] = Field(..., description="Current board state (0 = empty)")
     time_seconds: int = Field(..., ge=0, description="Time spent in seconds")
     is_paused: bool = Field(default=False, description="Whether the game is paused")
+    mistakes: int = Field(default=0, ge=0, le=3, description="Number of mistakes made")
 
 
 class ProgressResponse(BaseModel):
@@ -32,6 +34,8 @@ class ProgressResponse(BaseModel):
     time_seconds: int
     is_completed: bool
     is_paused: bool
+    mistakes: int = 0
+    is_failed: bool = False
 
 
 # ============ Verification ============

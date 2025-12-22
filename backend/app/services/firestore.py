@@ -160,6 +160,16 @@ def update_user_stats_on_completion(
 
 # ============ Progress Operations ============
 
+def flatten_board(board: list[list[int]]) -> list[int]:
+    """Flatten 2D board to 1D array for Firestore (doesn't support nested arrays)."""
+    return [cell for row in board for cell in row]
+
+
+def unflatten_board(flat_board: list[int]) -> list[list[int]]:
+    """Convert 1D array back to 2D 9x9 board."""
+    return [flat_board[i*9:(i+1)*9] for i in range(9)]
+
+
 def get_progress(passkey: str, puzzle_date: date) -> Optional[dict]:
     """Get user's progress for a specific puzzle date."""
     db = get_firestore_client()
@@ -168,7 +178,11 @@ def get_progress(passkey: str, puzzle_date: date) -> Optional[dict]:
     progress_doc = progress_ref.get()
 
     if progress_doc.exists:
-        return progress_doc.to_dict()
+        data = progress_doc.to_dict()
+        # Unflatten board from 1D to 2D
+        if "board" in data and isinstance(data["board"], list) and len(data["board"]) == 81:
+            data["board"] = unflatten_board(data["board"])
+        return data
     return None
 
 
@@ -178,27 +192,40 @@ def save_progress(
     board: list[list[int]],
     time_seconds: int,
     is_paused: bool = False,
-    is_completed: bool = False
+    is_completed: bool = False,
+    mistakes: int = 0,
+    is_failed: bool = False
 ) -> dict:
     """Save user's progress on a puzzle."""
     db = get_firestore_client()
     doc_id = f"{passkey}_{puzzle_date.isoformat()}"
     progress_ref = db.collection("progress").document(doc_id)
 
+    # Flatten board for Firestore storage (doesn't support nested arrays)
+    flat_board = flatten_board(board) if board else []
+
     data = {
         "passkey": passkey,
         "date": puzzle_date.isoformat(),
-        "board": board,
+        "board": flat_board,
         "time_seconds": time_seconds,
         "is_paused": is_paused,
         "is_completed": is_completed,
+        "mistakes": mistakes,
+        "is_failed": is_failed,
         "updated_at": datetime.utcnow(),
     }
 
     if is_completed:
         data["completed_at"] = datetime.utcnow()
 
+    if is_failed:
+        data["failed_at"] = datetime.utcnow()
+
     progress_ref.set(data, merge=True)
+
+    # Return with 2D board for API response
+    data["board"] = board
     return data
 
 

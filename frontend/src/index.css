@@ -1,0 +1,81 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base styles */
+body {
+  @apply bg-gray-50 text-gray-900 antialiased;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Prevent text selection on game elements */
+.no-select {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Sudoku grid specific styles */
+.sudoku-grid {
+  @apply grid gap-0 bg-gray-900;
+  grid-template-columns: repeat(9, 1fr);
+}
+
+.sudoku-cell {
+  @apply flex items-center justify-center bg-white text-2xl font-semibold cursor-pointer transition-colors duration-100;
+  aspect-ratio: 1;
+}
+
+/* Bold borders every 3 cells */
+.sudoku-cell.border-right-thick {
+  @apply border-r-2 border-r-gray-900;
+}
+
+.sudoku-cell.border-bottom-thick {
+  @apply border-b-2 border-b-gray-900;
+}
+
+/* Number pad button styles */
+.numpad-btn {
+  @apply flex items-center justify-center w-12 h-12 text-xl font-semibold rounded-lg bg-white border-2 border-gray-200 hover:bg-gray-100 active:bg-gray-200 transition-colors;
+}
+
+.numpad-btn.active {
+  @apply bg-blue-500 text-white border-blue-500;
+}
+
+/* Mobile touch optimization */
+@media (max-width: 640px) {
+  .sudoku-cell {
+    @apply text-lg;
+  }
+  
+  .numpad-btn {
+    @apply w-10 h-10 text-lg;
+  }
+}
+
+/* Animations */
+@keyframes pulse-conflict {
+  0%, 100% { background-color: #fef2f2; }
+  50% { background-color: #fee2e2; }
+}
+
+.conflict-pulse {
+  animation: pulse-conflict 0.5s ease-in-out;
+}
+
+/* Timer styles */
+.timer {
+  @apply font-mono text-2xl font-bold tabular-nums;
+}
+
+/* Modal backdrop */
+.modal-backdrop {
+  @apply fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50;
+}
+
+.modal-content {
+  @apply bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 p-6;
+}

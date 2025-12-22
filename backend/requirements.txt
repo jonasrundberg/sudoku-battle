@@ -1,0 +1,19 @@
+# Web framework
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+
+# Sudoku puzzle generation
+py-sudoku==2.0.0
+
+# Firebase/Firestore
+google-cloud-firestore==2.19.0
+
+# Pydantic for data validation
+pydantic==2.10.3
+pydantic-settings==2.6.1
+
+# CORS support (included in fastapi, but explicit for clarity)
+python-multipart==0.0.18
+
+# Environment variables
+python-dotenv==1.0.1

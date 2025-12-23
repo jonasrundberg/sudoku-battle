@@ -20,6 +20,11 @@ class Settings(BaseSettings):
     # Firestore emulator host (for local development)
     firestore_emulator_host: str = ""
 
+    # WebAuthn settings
+    webauthn_rp_id: str = "localhost"  # Relying Party ID (domain)
+    webauthn_rp_name: str = "Sudoku Battle"
+    webauthn_origin: str = "http://localhost:5173"
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

@@ -5,7 +5,7 @@
 import { useState } from 'react'
 import UsernameEditor from './UsernameEditor'
 
-export default function Header({ passkey, onStatsClick, onLeaderboardClick }) {
+export default function Header({ passkey, onStatsClick, onLeaderboardClick, onPasskeyAuthClick }) {
   const [showUsernameEditor, setShowUsernameEditor] = useState(false)
 
   return (
@@ -63,6 +63,30 @@ export default function Header({ passkey, onStatsClick, onLeaderboardClick }) {
                 strokeLinejoin="round"
                 strokeWidth={2}
                 d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+              />
+            </svg>
+          </button>
+
+          {/* Passkey/Account button */}
+          <button
+            type="button"
+            onClick={onPasskeyAuthClick}
+            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            aria-label="Account"
+            title="Account & Passkey"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6 text-gray-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
               />
             </svg>
           </button>

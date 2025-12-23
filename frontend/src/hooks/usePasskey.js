@@ -3,7 +3,7 @@
  * Generates and stores a unique passkey in localStorage.
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 const PASSKEY_STORAGE_KEY = 'sudoku_battle_passkey'
 
@@ -25,5 +25,11 @@ export function usePasskey() {
     setIsLoading(false)
   }, [])
 
-  return { passkey, isLoading }
+  // Function to update the passkey (used after WebAuthn login)
+  const updatePasskey = useCallback((newPasskey) => {
+    localStorage.setItem(PASSKEY_STORAGE_KEY, newPasskey)
+    setPasskey(newPasskey)
+  }, [])
+
+  return { passkey, isLoading, updatePasskey }
 }

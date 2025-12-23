@@ -560,3 +560,82 @@ def record_completion_to_leaderboards(
             time_seconds=time_seconds,
             difficulty=difficulty,
         )
+
+
+# ============ WebAuthn/Passkey Operations ============
+
+def store_auth_challenge(
+    identifier: str,
+    challenge: str,
+    challenge_type: str,
+) -> None:
+    """Store an authentication challenge for verification."""
+    db = get_firestore_client()
+    doc_ref = db.collection("auth_challenges").document(identifier)
+    doc_ref.set({
+        "challenge": challenge,
+        "type": challenge_type,
+        "created_at": datetime.utcnow(),
+    })
+
+
+def get_auth_challenge(identifier: str) -> Optional[dict]:
+    """Get a stored authentication challenge."""
+    db = get_firestore_client()
+    doc = db.collection("auth_challenges").document(identifier).get()
+    if doc.exists:
+        return doc.to_dict()
+    return None
+
+
+def delete_auth_challenge(identifier: str) -> None:
+    """Delete an authentication challenge after use."""
+    db = get_firestore_client()
+    db.collection("auth_challenges").document(identifier).delete()
+
+
+def store_user_credential(
+    passkey: str,
+    credential_id: str,
+    public_key: str,
+    sign_count: int,
+) -> None:
+    """Store a WebAuthn credential for a user."""
+    db = get_firestore_client()
+    doc_ref = db.collection("credentials").document(credential_id)
+    doc_ref.set({
+        "passkey": passkey,
+        "credential_id": credential_id,
+        "public_key": public_key,
+        "sign_count": sign_count,
+        "created_at": datetime.utcnow(),
+    })
+
+
+def get_user_credentials(passkey: str) -> list[dict]:
+    """Get all WebAuthn credentials for a user."""
+    db = get_firestore_client()
+    results = db.collection("credentials").where(
+        filter=FieldFilter("passkey", "==", passkey)
+    ).get()
+    return [doc.to_dict() for doc in results]
+
+
+def get_credential_by_id(credential_id: str) -> Optional[dict]:
+    """Get a credential by its ID."""
+    db = get_firestore_client()
+    doc = db.collection("credentials").document(credential_id).get()
+    if doc.exists:
+        return doc.to_dict()
+    return None
+
+
+def update_credential_sign_count(
+    passkey: str,
+    credential_id: str,
+    sign_count: int,
+) -> None:
+    """Update the sign count for a credential (replay attack prevention)."""
+    db = get_firestore_client()
+    doc_ref = db.collection("credentials").document(credential_id)
+    doc_ref.update({"sign_count": sign_count})

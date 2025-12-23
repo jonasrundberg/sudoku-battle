@@ -17,3 +17,6 @@ python-multipart==0.0.18
 
 # Environment variables
 python-dotenv==1.0.1
+
+# WebAuthn/Passkeys
+webauthn==2.7.0

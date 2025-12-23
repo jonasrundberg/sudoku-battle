@@ -116,3 +116,37 @@ export async function getLeaderboardByCode(inviteCode) {
 export async function getGlobalLeaderboard() {
   return apiRequest('/leaderboard/global')
 }
+
+// ============ Auth/Passkey ============
+
+export async function startPasskeyRegistration(passkey, username) {
+  return apiRequest('/auth/register/start', {
+    method: 'POST',
+    body: JSON.stringify({ passkey, username }),
+  })
+}
+
+export async function finishPasskeyRegistration(passkey, credential) {
+  return apiRequest('/auth/register/finish', {
+    method: 'POST',
+    body: JSON.stringify({ passkey, credential }),
+  })
+}
+
+export async function startPasskeyLogin() {
+  return apiRequest('/auth/login/start', {
+    method: 'POST',
+    body: JSON.stringify({}),
+  })
+}
+
+export async function finishPasskeyLogin(credential) {
+  return apiRequest('/auth/login/finish', {
+    method: 'POST',
+    body: JSON.stringify({ credential }),
+  })
+}
+
+export async function checkPasskeyRegistered(passkey) {
+  return apiRequest(`/auth/check/${passkey}`)
+}

@@ -7,7 +7,7 @@ from fastapi.responses import FileResponse
 import os
 
 from app.config import get_settings
-from app.api import puzzle, progress, user, leaderboard
+from app.api import puzzle, progress, user, leaderboard, auth
 
 settings = get_settings()
 
@@ -31,6 +31,7 @@ app.include_router(puzzle.router, prefix="/api", tags=["puzzle"])
 app.include_router(progress.router, prefix="/api", tags=["progress"])
 app.include_router(user.router, prefix="/api", tags=["user"])
 app.include_router(leaderboard.router, prefix="/api", tags=["leaderboard"])
+app.include_router(auth.router, prefix="/api", tags=["auth"])
 
 
 # Health check endpoint

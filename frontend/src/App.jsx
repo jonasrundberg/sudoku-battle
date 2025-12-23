@@ -7,12 +7,13 @@ import StatsModal from './components/StatsModal'
 import LeaderboardModal from './components/LeaderboardModal'
 import CompletionModal from './components/CompletionModal'
 import GameOverModal from './components/GameOverModal'
+import PasskeyAuth from './components/PasskeyAuth'
 import { usePasskey } from './hooks/usePasskey'
 import { useSudoku } from './hooks/useSudoku'
 import { useTimer } from './hooks/useTimer'
 
 function App() {
-  const { passkey, isLoading: passkeyLoading } = usePasskey()
+  const { passkey, isLoading: passkeyLoading, updatePasskey } = usePasskey()
   const {
     puzzle,
     board,
@@ -50,6 +51,7 @@ function App() {
   const [showLeaderboard, setShowLeaderboard] = useState(false)
   const [showCompletion, setShowCompletion] = useState(false)
   const [showGameOver, setShowGameOver] = useState(false)
+  const [showPasskeyAuth, setShowPasskeyAuth] = useState(false)
   const [verificationError, setVerificationError] = useState(null)
   const [lastMistakeCell, setLastMistakeCell] = useState(null)
 
@@ -194,6 +196,7 @@ function App() {
         passkey={passkey}
         onStatsClick={() => setShowStats(true)}
         onLeaderboardClick={() => setShowLeaderboard(true)}
+        onPasskeyAuthClick={() => setShowPasskeyAuth(true)}
       />
 
       <main className="flex-1 flex flex-col items-center justify-center p-4 max-w-lg mx-auto w-full">
@@ -322,6 +325,18 @@ function App() {
         <GameOverModal
           mistakes={mistakes}
           onClose={() => setShowGameOver(false)}
+        />
+      )}
+
+      {showPasskeyAuth && (
+        <PasskeyAuth
+          passkey={passkey}
+          onPasskeyChange={(newPasskey) => {
+            updatePasskey(newPasskey)
+            // Reload the page to fetch data for the new passkey
+            window.location.reload()
+          }}
+          onClose={() => setShowPasskeyAuth(false)}
         />
       )}
     </div>

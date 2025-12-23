@@ -14,15 +14,9 @@
 set -e
 
 # Configuration
-PROJECT_ID="${GCP_PROJECT_ID:-$(gcloud config get-value project)}"
+PROJECT_ID="${GCP_PROJECT_ID:-$(gcloud config get-value project 2>/dev/null)}"
 REGION="${GCP_REGION:-europe-west1}"
 SERVICE_NAME="sudoku-battle"
-
-echo "🎮 Deploying Sudoku Battle to Cloud Run"
-echo "   Project: $PROJECT_ID"
-echo "   Region: $REGION"
-echo "   Service: $SERVICE_NAME"
-echo ""
 
 # Check if project is set
 if [ -z "$PROJECT_ID" ]; then
@@ -30,6 +24,21 @@ if [ -z "$PROJECT_ID" ]; then
     echo "   Run: gcloud config set project YOUR_PROJECT_ID"
     exit 1
 fi
+
+echo "🎮 Sudoku Battle - Cloud Run Deployment"
+echo ""
+echo "   Project: $PROJECT_ID"
+echo "   Region:  $REGION"
+echo "   Service: $SERVICE_NAME"
+echo ""
+
+# Confirm before deploying
+read -p "Deploy to project '$PROJECT_ID'? (y/n): " CONFIRM
+if [ "$CONFIRM" != "y" ] && [ "$CONFIRM" != "Y" ]; then
+    echo "❌ Deployment cancelled."
+    exit 1
+fi
+echo ""
 
 # Build and deploy
 echo "📦 Building and deploying..."

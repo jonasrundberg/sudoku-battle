@@ -4,27 +4,22 @@ Deterministic sudoku puzzle generator.
 Uses py-sudoku library with date-based seeding to ensure all users
 get the same puzzle on the same day.
 
-Difficulty rotates by day of week:
-- Monday/Thursday: Easy (40% empty)
-- Tuesday/Friday: Medium (50% empty)
-- Wednesday/Saturday: Hard (60% empty)
-- Sunday: Expert (70% empty)
+Difficulty is randomly determined using the same date seed as the puzzle,
+ensuring everyone gets the same difficulty on the same day.
 """
 
+import random
 from datetime import date
 from sudoku import Sudoku
 
 
 # Difficulty settings: (difficulty_name, empty_cell_percentage)
-DIFFICULTY_BY_WEEKDAY = {
-    0: ("easy", 0.4),      # Monday
-    1: ("medium", 0.5),    # Tuesday
-    2: ("hard", 0.6),      # Wednesday
-    3: ("easy", 0.4),      # Thursday
-    4: ("medium", 0.5),    # Friday
-    5: ("hard", 0.6),      # Saturday
-    6: ("expert", 0.7),    # Sunday
-}
+DIFFICULTIES = [
+    ("easy", 0.4),
+    ("medium", 0.5),
+    ("hard", 0.6),
+    ("expert", 0.7),
+]
 
 DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
@@ -42,12 +37,15 @@ def date_to_seed(puzzle_date: date) -> int:
 def get_difficulty_for_date(puzzle_date: date) -> tuple[str, float]:
     """
     Get the difficulty level and empty cell percentage for a given date.
+    Uses date-based random selection so all users get the same difficulty.
 
     Returns:
         Tuple of (difficulty_name, empty_percentage)
     """
-    weekday = puzzle_date.weekday()
-    return DIFFICULTY_BY_WEEKDAY[weekday]
+    # Use the date seed to randomly select difficulty
+    seed = date_to_seed(puzzle_date)
+    rng = random.Random(seed)
+    return rng.choice(DIFFICULTIES)
 
 
 def get_day_of_week(puzzle_date: date) -> str:

@@ -209,7 +209,7 @@ function App() {
             `}>
               {difficulty}
             </span>
-            {/* Lives/Hearts - use grayscale filter for lost hearts since emoji ignores text-color */}
+            {/* Lives/Stars - use grayscale filter for lost stars since emoji ignores text-color */}
             <div className="flex items-center gap-1">
               {[...Array(maxMistakes)].map((_, i) => (
                 <span
@@ -220,7 +220,7 @@ function App() {
                       : 'grayscale opacity-40'
                   }`}
                 >
-                  ❤️
+                  ⭐
                 </span>
               ))}
             </div>

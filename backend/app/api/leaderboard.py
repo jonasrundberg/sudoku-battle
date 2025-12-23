@@ -3,6 +3,7 @@
 from datetime import date
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+from typing import Optional
 
 from app.models.schemas import (
     LeaderboardCreateRequest,
@@ -20,6 +21,71 @@ router = APIRouter()
 class LeaderboardListResponse(BaseModel):
     """List of user's leaderboards."""
     leaderboards: list[LeaderboardResponse]
+
+
+class LeaderboardMemberStats(BaseModel):
+    """Stats for a single member on the leaderboard."""
+    username: str
+    games_total: int
+    games_completed: int
+    games_failed: int
+    avg_stars: float
+    avg_time_all: Optional[float] = None
+    avg_time_last_5: Optional[float] = None
+
+
+class LeaderboardFullStatsResponse(BaseModel):
+    """Full leaderboard with member stats."""
+    leaderboard_id: str
+    leaderboard_name: str
+    member_count: int
+    members: list[LeaderboardMemberStats]
+
+
+class GlobalLeaderboardResponse(BaseModel):
+    """Global top players leaderboard."""
+    members: list[LeaderboardMemberStats]
+
+
+@router.get("/leaderboard/global", response_model=GlobalLeaderboardResponse)
+async def get_global_leaderboard():
+    """
+    Get top 100 players globally by games completed.
+    """
+    top_players = firestore.get_global_top_players(limit=100)
+
+    member_stats = [
+        LeaderboardMemberStats(**player) for player in top_players
+    ]
+
+    return GlobalLeaderboardResponse(members=member_stats)
+
+
+@router.get("/leaderboard/code/{invite_code}", response_model=LeaderboardFullStatsResponse)
+async def get_leaderboard_by_code(invite_code: str):
+    """
+    Get leaderboard info and full member stats by invite code.
+    This is the public page endpoint.
+    """
+    leaderboard = firestore.get_leaderboard_by_invite_code(invite_code.upper())
+    if not leaderboard:
+        raise HTTPException(status_code=404, detail="Leaderboard not found")
+
+    # Get stats for all members
+    member_stats = []
+    for member_passkey in leaderboard.get("members", []):
+        stats = firestore.get_member_leaderboard_stats(leaderboard["id"], member_passkey)
+        member_stats.append(LeaderboardMemberStats(**stats))
+
+    # Sort by avg_stars descending, then avg_time_all ascending
+    member_stats.sort(key=lambda m: (-m.avg_stars, m.avg_time_all or float('inf')))
+
+    return LeaderboardFullStatsResponse(
+        leaderboard_id=leaderboard["id"],
+        leaderboard_name=leaderboard["name"],
+        member_count=len(leaderboard.get("members", [])),
+        members=member_stats,
+    )
 
 
 @router.get("/leaderboards/{passkey}", response_model=LeaderboardListResponse)

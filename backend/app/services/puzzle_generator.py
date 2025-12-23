@@ -15,6 +15,7 @@ from sudoku import Sudoku
 
 # Difficulty settings: (difficulty_name, empty_cell_percentage)
 DIFFICULTIES = [
+    ("super easy", 0.1),
     ("easy", 0.4),
     ("medium", 0.5),
     ("hard", 0.6),
@@ -45,6 +46,7 @@ def get_difficulty_for_date(puzzle_date: date) -> tuple[str, float]:
     # Use the date seed to randomly select difficulty
     seed = date_to_seed(puzzle_date)
     rng = random.Random(seed)
+    return DIFFICULTIES[0]  # temporarily only for development
     return rng.choice(DIFFICULTIES)
 
 

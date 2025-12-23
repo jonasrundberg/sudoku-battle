@@ -108,3 +108,11 @@ export async function joinLeaderboard(passkey, inviteCode) {
 export async function getLeaderboardResults(leaderboardId) {
   return apiRequest(`/leaderboard/${leaderboardId}/results`)
 }
+
+export async function getLeaderboardByCode(inviteCode) {
+  return apiRequest(`/leaderboard/code/${inviteCode}`)
+}
+
+export async function getGlobalLeaderboard() {
+  return apiRequest('/leaderboard/global')
+}

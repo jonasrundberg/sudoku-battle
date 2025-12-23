@@ -329,6 +329,179 @@ def get_leaderboard(leaderboard_id: str) -> Optional[dict]:
     return None
 
 
+def get_leaderboard_by_invite_code(invite_code: str) -> Optional[dict]:
+    """Get a leaderboard by invite code."""
+    db = get_firestore_client()
+
+    results = db.collection("leaderboards").where(
+        filter=FieldFilter("invite_code", "==", invite_code.upper())
+    ).limit(1).get()
+
+    results_list = list(results)
+    if not results_list:
+        return None
+
+    return results_list[0].to_dict()
+
+
+def get_member_leaderboard_stats(leaderboard_id: str, passkey: str) -> dict:
+    """
+    Get comprehensive stats for a member within a leaderboard.
+
+    Returns:
+        - username
+        - games_total (completed + failed)
+        - games_completed
+        - games_failed
+        - avg_stars (3 - avg_mistakes for completed games)
+        - avg_time_all (average time for all completed games)
+        - avg_time_last_5 (average time for last 5 completed games)
+    """
+    db = get_firestore_client()
+
+    # Get user info
+    user = get_or_create_user(passkey)
+    username = user.get("username") or f"Player-{passkey[:6]}"
+
+    # Get all results for this member in this leaderboard
+    results = db.collection("leaderboard_results").where(
+        filter=FieldFilter("leaderboard_id", "==", leaderboard_id)
+    ).where(
+        filter=FieldFilter("passkey", "==", passkey)
+    ).get()
+
+    results_list = [doc.to_dict() for doc in results]
+    # Sort by completed_at descending in Python to avoid needing a composite index
+    results_list.sort(key=lambda x: x.get("completed_at", datetime.min), reverse=True)
+
+    # Get progress data for failed games count and mistakes
+    # We need to query progress collection for this user
+    progress_docs = db.collection("progress").where(
+        filter=FieldFilter("passkey", "==", passkey)
+    ).get()
+
+    progress_by_date = {}
+    for doc in progress_docs:
+        data = doc.to_dict()
+        progress_by_date[data.get("date")] = data
+
+    games_completed = len(results_list)
+    games_failed = sum(1 for p in progress_by_date.values() if p.get("is_failed", False))
+    games_total = games_completed + games_failed
+
+    # Calculate avg_stars (based on mistakes in progress records)
+    total_stars = 0
+    star_count = 0
+    for result in results_list:
+        result_date = result.get("date")
+        progress = progress_by_date.get(result_date, {})
+        mistakes = progress.get("mistakes", 0)
+        stars = max(0, 3 - mistakes)  # 3 stars max, minus mistakes
+        total_stars += stars
+        star_count += 1
+
+    avg_stars = total_stars / star_count if star_count > 0 else 0
+
+    # Calculate avg times
+    times = [r.get("time_seconds") for r in results_list if r.get("time_seconds")]
+    avg_time_all = sum(times) / len(times) if times else None
+
+    last_5_times = times[:5]  # Already sorted by completed_at DESC
+    avg_time_last_5 = sum(last_5_times) / len(last_5_times) if last_5_times else None
+
+    return {
+        "username": username,
+        "games_total": games_total,
+        "games_completed": games_completed,
+        "games_failed": games_failed,
+        "avg_stars": round(avg_stars, 2),
+        "avg_time_all": round(avg_time_all, 1) if avg_time_all else None,
+        "avg_time_last_5": round(avg_time_last_5, 1) if avg_time_last_5 else None,
+    }
+
+
+def get_global_top_players(limit: int = 100) -> list[dict]:
+    """
+    Get top players globally by games completed.
+
+    Returns list of player stats sorted by games_completed descending.
+    """
+    db = get_firestore_client()
+
+    # Get all leaderboard_results grouped by passkey
+    all_results = db.collection("leaderboard_results").get()
+
+    # Group results by passkey
+    results_by_passkey = {}
+    for doc in all_results:
+        data = doc.to_dict()
+        passkey = data.get("passkey")
+        if passkey:
+            if passkey not in results_by_passkey:
+                results_by_passkey[passkey] = []
+            results_by_passkey[passkey].append(data)
+
+    # Also get progress for failed games and mistakes
+    all_progress = db.collection("progress").get()
+    progress_by_passkey = {}
+    for doc in all_progress:
+        data = doc.to_dict()
+        passkey = data.get("passkey")
+        if passkey:
+            if passkey not in progress_by_passkey:
+                progress_by_passkey[passkey] = {}
+            progress_by_passkey[passkey][data.get("date")] = data
+
+    # Calculate stats for each player
+    player_stats = []
+    for passkey, results in results_by_passkey.items():
+        # Get user info
+        user = get_or_create_user(passkey)
+        username = user.get("username") or f"Player-{passkey[:6]}"
+
+        # Sort results by completed_at descending
+        results.sort(key=lambda x: x.get("completed_at", datetime.min), reverse=True)
+
+        games_completed = len(results)
+        progress_data = progress_by_passkey.get(passkey, {})
+        games_failed = sum(1 for p in progress_data.values() if p.get("is_failed", False))
+        games_total = games_completed + games_failed
+
+        # Calculate avg_stars
+        total_stars = 0
+        star_count = 0
+        for result in results:
+            result_date = result.get("date")
+            progress = progress_data.get(result_date, {})
+            mistakes = progress.get("mistakes", 0)
+            stars = max(0, 3 - mistakes)
+            total_stars += stars
+            star_count += 1
+        avg_stars = total_stars / star_count if star_count > 0 else 0
+
+        # Calculate avg times
+        times = [r.get("time_seconds") for r in results if r.get("time_seconds")]
+        avg_time_all = sum(times) / len(times) if times else None
+
+        last_5_times = times[:5]
+        avg_time_last_5 = sum(last_5_times) / len(last_5_times) if last_5_times else None
+
+        player_stats.append({
+            "username": username,
+            "games_total": games_total,
+            "games_completed": games_completed,
+            "games_failed": games_failed,
+            "avg_stars": round(avg_stars, 2),
+            "avg_time_all": round(avg_time_all, 1) if avg_time_all else None,
+            "avg_time_last_5": round(avg_time_last_5, 1) if avg_time_last_5 else None,
+        })
+
+    # Sort by games_completed descending
+    player_stats.sort(key=lambda x: -x["games_completed"])
+
+    return player_stats[:limit]
+
+
 def save_leaderboard_result(
     leaderboard_id: str,
     passkey: str,

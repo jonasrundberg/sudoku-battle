@@ -3,6 +3,7 @@
  */
 
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   getUserLeaderboards,
   createLeaderboard,
@@ -11,6 +12,7 @@ import {
 } from '../utils/api'
 
 export default function LeaderboardModal({ passkey, onClose }) {
+  const navigate = useNavigate()
   const [leaderboards, setLeaderboards] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('list') // 'list', 'create', 'join', 'view'
@@ -105,6 +107,11 @@ export default function LeaderboardModal({ passkey, onClose }) {
     // Could show a toast here
   }
 
+  const goToLeaderboardPage = (inviteCode) => {
+    onClose()
+    navigate(`/leaderboard/${inviteCode}`)
+  }
+
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div
@@ -183,7 +190,7 @@ export default function LeaderboardModal({ passkey, onClose }) {
                     <div
                       key={lb.id}
                       className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
-                      onClick={() => handleViewResults(lb)}
+                      onClick={() => goToLeaderboardPage(lb.invite_code)}
                     >
                       <div className="flex justify-between items-start">
                         <div>

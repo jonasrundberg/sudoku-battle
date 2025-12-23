@@ -5,6 +5,7 @@ from fastapi import APIRouter
 
 from app.models.schemas import PuzzleResponse
 from app.services.puzzle_generator import generate_puzzle
+from app.services import firestore
 
 router = APIRouter()
 
@@ -26,3 +27,19 @@ async def get_today_puzzle():
         difficulty=puzzle_data["difficulty"],
         day_of_week=puzzle_data["day_of_week"],
     )
+
+
+@router.get("/puzzle/today/stats")
+async def get_today_stats():
+    """
+    Get stats for today's puzzle without revealing the puzzle itself.
+    Used for the start screen.
+    """
+    puzzle_data = generate_puzzle(date.today())
+    player_count = firestore.get_today_player_count()
+
+    return {
+        "date": puzzle_data["date"],
+        "difficulty": puzzle_data["difficulty"],
+        "player_count": player_count,
+    }

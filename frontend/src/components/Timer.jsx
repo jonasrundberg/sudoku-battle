@@ -1,9 +1,9 @@
 /**
  * Timer component with pause functionality.
- * Displays elapsed time in MM:SS format.
+ * Displays elapsed time in MM:SS format, along with difficulty and lives.
  */
 
-export default function Timer({ time, isPaused, isCompleted, isFailed, onPauseToggle }) {
+export default function Timer({ time, isPaused, isCompleted, isFailed, onPauseToggle, difficulty, mistakes, maxMistakes }) {
   // Format time as MM:SS
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60)
@@ -12,7 +12,7 @@ export default function Timer({ time, isPaused, isCompleted, isFailed, onPauseTo
   }
 
   return (
-    <div className="flex items-center gap-4 mb-4">
+    <div className="flex items-center justify-between w-full max-w-md mb-2 px-1">
       <div className="timer text-gray-800">
         {formatTime(time)}
       </div>
@@ -69,6 +69,32 @@ export default function Timer({ time, isPaused, isCompleted, isFailed, onPauseTo
       {isCompleted && (
         <span className="text-green-600 font-semibold">✓ Complete!</span>
       )}
+
+      {/* Difficulty and Stars */}
+      <div className="flex items-center gap-2">
+        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium capitalize
+          ${difficulty === 'easy' ? 'bg-green-100 text-green-800' : ''}
+          ${difficulty === 'medium' ? 'bg-yellow-100 text-yellow-800' : ''}
+          ${difficulty === 'hard' ? 'bg-orange-100 text-orange-800' : ''}
+          ${difficulty === 'expert' ? 'bg-red-100 text-red-800' : ''}
+        `}>
+          {difficulty}
+        </span>
+        <div className="flex items-center gap-0.5">
+          {[...Array(maxMistakes)].map((_, i) => (
+            <span
+              key={i}
+              className={`text-lg transition-all duration-300 ${
+                i < maxMistakes - mistakes
+                  ? ''
+                  : 'grayscale opacity-40'
+              }`}
+            >
+              ⭐
+            </span>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

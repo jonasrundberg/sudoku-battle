@@ -33,6 +33,10 @@ export async function getTodayPuzzle() {
   return apiRequest('/puzzle/today')
 }
 
+export async function getTodayStats() {
+  return apiRequest('/puzzle/today/stats')
+}
+
 // ============ Progress ============
 
 export async function getProgress(passkey) {

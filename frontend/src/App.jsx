@@ -8,9 +8,11 @@ import LeaderboardModal from './components/LeaderboardModal'
 import CompletionModal from './components/CompletionModal'
 import GameOverModal from './components/GameOverModal'
 import PasskeyAuth from './components/PasskeyAuth'
+import StartScreen from './components/StartScreen'
 import { usePasskey } from './hooks/usePasskey'
 import { useSudoku } from './hooks/useSudoku'
 import { useTimer } from './hooks/useTimer'
+import { getProgress } from './utils/api'
 
 function App() {
   const { passkey, isLoading: passkeyLoading, updatePasskey } = usePasskey()
@@ -54,10 +56,36 @@ function App() {
   const [showPasskeyAuth, setShowPasskeyAuth] = useState(false)
   const [verificationError, setVerificationError] = useState(null)
   const [lastMistakeCell, setLastMistakeCell] = useState(null)
+  const [showStartScreen, setShowStartScreen] = useState(null) // null = checking, true = show, false = hide
+  const [checkingProgress, setCheckingProgress] = useState(true)
 
-  // Load puzzle and progress on mount
+  // Check if user has progress for today before showing the game
   useEffect(() => {
-    if (passkey && !passkeyLoading) {
+    if (!passkey || passkeyLoading) return
+
+    const checkTodayProgress = async () => {
+      try {
+        const progress = await getProgress(passkey)
+        if (progress && progress.date) {
+          // User has progress for today - go straight to game
+          setShowStartScreen(false)
+        } else {
+          // No progress - show start screen
+          setShowStartScreen(true)
+        }
+      } catch {
+        // No progress found - show start screen
+        setShowStartScreen(true)
+      } finally {
+        setCheckingProgress(false)
+      }
+    }
+    checkTodayProgress()
+  }, [passkey, passkeyLoading])
+
+  // Load puzzle and progress when game starts (after clicking Play or if user has existing progress)
+  useEffect(() => {
+    if (passkey && !passkeyLoading && showStartScreen === false) {
       loadPuzzle().then(() => {
         loadProgress().then((progress) => {
           if (progress) {
@@ -74,7 +102,7 @@ function App() {
         })
       })
     }
-  }, [passkey, passkeyLoading])
+  }, [passkey, passkeyLoading, showStartScreen])
 
   // Auto-save progress periodically
   useEffect(() => {
@@ -179,7 +207,30 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [selectedCell, isPaused, isCompleted, isFailed, handleNumberInput, handleEraseClick, setSelectedCell])
 
-  if (passkeyLoading || !puzzle || !board) {
+  // Handle Play button from start screen
+  const handlePlay = useCallback(() => {
+    setShowStartScreen(false)
+  }, [])
+
+  // Show loading while checking for existing progress
+  if (passkeyLoading || checkingProgress) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show start screen if user hasn't started today's puzzle
+  if (showStartScreen) {
+    return <StartScreen onPlay={handlePlay} />
+  }
+
+  // Show loading while puzzle loads after clicking Play
+  if (!puzzle || !board) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -199,44 +250,17 @@ function App() {
         onPasskeyAuthClick={() => setShowPasskeyAuth(true)}
       />
 
-      <main className="flex-1 flex flex-col items-center justify-center p-4 max-w-lg mx-auto w-full">
-        {/* Date and difficulty */}
-        <div className="text-center mb-4">
-          <h2 className="text-lg font-semibold text-gray-700">{date}</h2>
-          <div className="flex items-center justify-center gap-3 mt-1">
-            <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium capitalize
-              ${difficulty === 'easy' ? 'bg-green-100 text-green-800' : ''}
-              ${difficulty === 'medium' ? 'bg-yellow-100 text-yellow-800' : ''}
-              ${difficulty === 'hard' ? 'bg-orange-100 text-orange-800' : ''}
-              ${difficulty === 'expert' ? 'bg-red-100 text-red-800' : ''}
-            `}>
-              {difficulty}
-            </span>
-            {/* Lives/Stars - use grayscale filter for lost stars since emoji ignores text-color */}
-            <div className="flex items-center gap-1">
-              {[...Array(maxMistakes)].map((_, i) => (
-                <span
-                  key={i}
-                  className={`text-xl transition-all duration-300 ${
-                    i < maxMistakes - mistakes
-                      ? ''
-                      : 'grayscale opacity-40'
-                  }`}
-                >
-                  ⭐
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Timer */}
+      <main className="flex-1 flex flex-col items-center justify-center p-2 pt-0 max-w-lg mx-auto w-full">
+        {/* Timer with difficulty and lives */}
         <Timer
           time={time}
           isPaused={isPaused}
           isCompleted={isCompleted}
           isFailed={isFailed}
           onPauseToggle={handlePauseToggle}
+          difficulty={difficulty}
+          mistakes={mistakes}
+          maxMistakes={maxMistakes}
         />
 
         {/* Sudoku Grid */}

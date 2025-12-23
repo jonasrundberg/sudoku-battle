@@ -7,7 +7,7 @@ export default function NumberPad({ onNumberClick, onEraseClick, disabled }) {
   const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
   return (
-    <div className="mt-6 w-full max-w-md px-2">
+    <div className="mt-3 w-full max-w-md px-2">
       <div className="flex justify-center gap-1">
         {numbers.map((num) => (
           <button

@@ -38,8 +38,8 @@ body {
 
 /* Number pad button styles */
 .numpad-btn {
-  @apply flex items-center justify-center text-xl font-semibold rounded-lg bg-white border-2 border-gray-200 hover:bg-gray-100 active:bg-gray-200 transition-colors;
-  padding: 0.5rem;
+  @apply flex items-center justify-center text-2xl font-bold rounded-lg bg-white border-2 border-gray-200 hover:bg-gray-100 active:bg-gray-200 transition-colors;
+  padding: 0.25rem;
 }
 
 .numpad-btn.active {
@@ -53,8 +53,8 @@ body {
   }
   
   .numpad-btn {
-    @apply text-base;
-    padding: 0.4rem;
+    @apply text-xl;
+    padding: 0.2rem;
   }
 }
 

@@ -158,6 +158,19 @@ def update_user_stats_on_completion(
     user_ref.update({"stats": stats})
 
 
+def get_today_player_count() -> int:
+    """Get the number of unique players who have started today's puzzle."""
+    db = get_firestore_client()
+    today = date.today().isoformat()
+
+    # Count progress documents for today
+    results = db.collection("progress").where(
+        filter=FieldFilter("date", "==", today)
+    ).get()
+
+    return len(list(results))
+
+
 # ============ Progress Operations ============
 
 def flatten_board(board: list[list[int]]) -> list[int]:

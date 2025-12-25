@@ -37,6 +37,10 @@ export async function getTodayStats() {
   return apiRequest('/puzzle/today/stats')
 }
 
+export async function getFriendsCompletions(passkey) {
+  return apiRequest(`/puzzle/today/friends?passkey=${passkey}`)
+}
+
 // ============ Progress ============
 
 export async function getProgress(passkey) {

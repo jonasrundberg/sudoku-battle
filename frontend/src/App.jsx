@@ -7,7 +7,7 @@ import StatsModal from './components/StatsModal'
 import LeaderboardModal from './components/LeaderboardModal'
 import CompletionModal from './components/CompletionModal'
 import GameOverModal from './components/GameOverModal'
-import PasskeyAuth from './components/PasskeyAuth'
+import AccountModal from './components/AccountModal'
 import StartScreen from './components/StartScreen'
 import { usePasskey } from './hooks/usePasskey'
 import { useSudoku } from './hooks/useSudoku'
@@ -53,7 +53,7 @@ function App() {
   const [showLeaderboard, setShowLeaderboard] = useState(false)
   const [showCompletion, setShowCompletion] = useState(false)
   const [showGameOver, setShowGameOver] = useState(false)
-  const [showPasskeyAuth, setShowPasskeyAuth] = useState(false)
+  const [showAccount, setShowAccount] = useState(false)
   const [verificationError, setVerificationError] = useState(null)
   const [lastMistakeCell, setLastMistakeCell] = useState(null)
   const [showStartScreen, setShowStartScreen] = useState(null) // null = checking, true = show, false = hide
@@ -226,7 +226,40 @@ function App() {
 
   // Show start screen if user hasn't started today's puzzle
   if (showStartScreen) {
-    return <StartScreen onPlay={handlePlay} />
+    return (
+      <>
+        <StartScreen
+          passkey={passkey}
+          onPlay={handlePlay}
+          onStatsClick={() => setShowStats(true)}
+          onLeaderboardClick={() => setShowLeaderboard(true)}
+          onAccountClick={() => setShowAccount(true)}
+        />
+        {/* Modals */}
+        {showStats && (
+          <StatsModal
+            passkey={passkey}
+            onClose={() => setShowStats(false)}
+          />
+        )}
+        {showLeaderboard && (
+          <LeaderboardModal
+            passkey={passkey}
+            onClose={() => setShowLeaderboard(false)}
+          />
+        )}
+        {showAccount && (
+          <AccountModal
+            passkey={passkey}
+            onPasskeyChange={(newPasskey) => {
+              updatePasskey(newPasskey)
+              window.location.reload()
+            }}
+            onClose={() => setShowAccount(false)}
+          />
+        )}
+      </>
+    )
   }
 
   // Show loading while puzzle loads after clicking Play
@@ -247,7 +280,7 @@ function App() {
         passkey={passkey}
         onStatsClick={() => setShowStats(true)}
         onLeaderboardClick={() => setShowLeaderboard(true)}
-        onPasskeyAuthClick={() => setShowPasskeyAuth(true)}
+        onAccountClick={() => setShowAccount(true)}
       />
 
       <main className="flex-1 flex flex-col items-center justify-center p-2 pt-0 max-w-lg mx-auto w-full">
@@ -352,15 +385,15 @@ function App() {
         />
       )}
 
-      {showPasskeyAuth && (
-        <PasskeyAuth
+      {showAccount && (
+        <AccountModal
           passkey={passkey}
           onPasskeyChange={(newPasskey) => {
             updatePasskey(newPasskey)
             // Reload the page to fetch data for the new passkey
             window.location.reload()
           }}
-          onClose={() => setShowPasskeyAuth(false)}
+          onClose={() => setShowAccount(false)}
         />
       )}
     </div>

@@ -171,6 +171,50 @@ def get_today_player_count() -> int:
     return len(list(results))
 
 
+def get_friends_completions_today(passkey: str) -> list[dict]:
+    """
+    Get friends who completed today's puzzle, sorted by shared leaderboard count.
+
+    Friends are defined as users who share at least one leaderboard with this user.
+    """
+    db = get_firestore_client()
+    today = date.today().isoformat()
+
+    # Get all leaderboards this user is on
+    leaderboards = db.collection("leaderboards").where(
+        filter=FieldFilter("members", "array_contains", passkey)
+    ).get()
+
+    # Count how many leaderboards each friend shares with this user
+    friend_leaderboard_count: dict[str, int] = {}
+    for lb in leaderboards:
+        lb_data = lb.to_dict()
+        for member in lb_data.get("members", []):
+            if member != passkey:
+                friend_leaderboard_count[member] = friend_leaderboard_count.get(member, 0) + 1
+
+    if not friend_leaderboard_count:
+        return []
+
+    # Get today's completions for all friends
+    friends_completions = []
+    for friend_passkey, shared_count in friend_leaderboard_count.items():
+        progress = get_progress(friend_passkey, date.today())
+        if progress and progress.get("is_completed"):
+            user = get_or_create_user(friend_passkey)
+            friends_completions.append({
+                "passkey": friend_passkey,
+                "username": user.get("username") or f"Player-{friend_passkey[:6]}",
+                "time_seconds": progress.get("time_seconds", 0),
+                "shared_leaderboards": shared_count,
+            })
+
+    # Sort by shared leaderboard count (desc), then by time (asc)
+    friends_completions.sort(key=lambda x: (-x["shared_leaderboards"], x["time_seconds"]))
+
+    return friends_completions
+
+
 # ============ Progress Operations ============
 
 def flatten_board(board: list[list[int]]) -> list[int]:

@@ -2,12 +2,7 @@
  * App header with title, user info, and navigation.
  */
 
-import { useState } from 'react'
-import UsernameEditor from './UsernameEditor'
-
-export default function Header({ passkey, onStatsClick, onLeaderboardClick, onPasskeyAuthClick }) {
-  const [showUsernameEditor, setShowUsernameEditor] = useState(false)
-
+export default function Header({ passkey, onStatsClick, onLeaderboardClick, onAccountClick }) {
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
       <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
@@ -67,37 +62,13 @@ export default function Header({ passkey, onStatsClick, onLeaderboardClick, onPa
             </svg>
           </button>
 
-          {/* Passkey/Account button */}
+          {/* Account button */}
           <button
             type="button"
-            onClick={onPasskeyAuthClick}
+            onClick={onAccountClick}
             className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
             aria-label="Account"
-            title="Account & Passkey"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6 text-gray-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
-              />
-            </svg>
-          </button>
-
-          {/* Settings / Username button */}
-          <button
-            type="button"
-            onClick={() => setShowUsernameEditor(true)}
-            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-            aria-label="Settings"
-            title="Edit Username"
+            title="Account"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -116,14 +87,6 @@ export default function Header({ passkey, onStatsClick, onLeaderboardClick, onPa
           </button>
         </div>
       </div>
-
-      {/* Username editor modal */}
-      {showUsernameEditor && (
-        <UsernameEditor
-          passkey={passkey}
-          onClose={() => setShowUsernameEditor(false)}
-        />
-      )}
     </header>
   )
 }

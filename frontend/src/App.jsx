@@ -139,16 +139,16 @@ function App() {
         
         if (result.gameOver) {
           pause()
-          // Save failed state to server
-          saveProgress(board, time, false, maxMistakes, moveHistory)
+          // Save failed state to server - use returned values to avoid stale closure
+          saveProgress(result.newBoard, time, false, result.newMistakes, result.newMoveHistory)
           setShowGameOver(true)
         } else {
-          // Save progress with updated mistakes
-          saveProgress(board, time, false, mistakes + 1, moveHistory)
+          // Save progress with updated mistakes - use returned values to avoid stale closure
+          saveProgress(result.newBoard, time, false, result.newMistakes, result.newMoveHistory)
         }
       }
     }
-  }, [selectedCell, isPaused, isCompleted, isFailed, handleCellInput, pause, saveProgress, board, time, mistakes, maxMistakes])
+  }, [selectedCell, isPaused, isCompleted, isFailed, handleCellInput, pause, saveProgress, time])
 
   // Handle erase
   const handleEraseClick = useCallback(() => {

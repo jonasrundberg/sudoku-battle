@@ -100,6 +100,7 @@ export function useSudoku(passkey) {
   }, [passkey, isCompleted, isFailed, moveHistory])
 
   // Handle cell input - returns true if correct, false if wrong
+  // Also returns newBoard and newMoveHistory to avoid stale closure issues when saving
   const handleCellInput = useCallback((row, col, value) => {
     // Don't allow editing original (given) cells
     if (originalBoard[row][col] !== 0) return { valid: false }
@@ -109,29 +110,34 @@ export function useSudoku(passkey) {
     const isCorrect = solution[row][col] === value
     const cellKey = `${row},${col}`
     
+    // Record move for replay
+    const timeMs = gameStartTime.current ? Date.now() - gameStartTime.current : 0
+    const newMove = {
+      row,
+      col,
+      value,
+      time_ms: timeMs,
+      is_correct: isCorrect,
+    }
+    
+    // Calculate new board
+    const newBoard = board.map(r => [...r])
+    newBoard[row][col] = value
+    
+    // Calculate new move history
+    const newMoveHistory = [...moveHistory, newMove]
+    
     if (!isCorrect) {
-      // Record move for replay
-      const timeMs = gameStartTime.current ? Date.now() - gameStartTime.current : 0
-      setMoveHistory(prev => [...prev, {
-        row,
-        col,
-        value,
-        time_ms: timeMs,
-        is_correct: false,
-      }])
+      // Update state
+      setMoveHistory(newMoveHistory)
       
       // Wrong answer - increment mistakes and place the wrong number
       const newMistakes = mistakes + 1
       setMistakes(newMistakes)
       
       // Place wrong number on board and mark as wrong
-      setBoard(prevBoard => {
-        const newBoard = prevBoard.map(r => [...r])
-        newBoard[row][col] = value
-        // Update conflicts
-        setConflicts(findConflicts(newBoard))
-        return newBoard
-      })
+      setBoard(newBoard)
+      setConflicts(findConflicts(newBoard))
       
       // Add to wrong cells set
       setWrongCells(prev => new Set([...prev, cellKey]))
@@ -139,33 +145,16 @@ export function useSudoku(passkey) {
       // Check if game over
       if (newMistakes >= MAX_MISTAKES) {
         setIsFailed(true)
-        return { valid: false, mistake: true, gameOver: true }
+        return { valid: false, mistake: true, gameOver: true, newMistakes, newBoard, newMoveHistory }
       }
       
-      return { valid: false, mistake: true, gameOver: false }
+      return { valid: false, mistake: true, gameOver: false, newMistakes, newBoard, newMoveHistory }
     }
 
-    // Correct answer - update board and remove from wrong cells if it was there
-    // Record move for replay
-    const timeMs = gameStartTime.current ? Date.now() - gameStartTime.current : 0
-    setMoveHistory(prev => [...prev, {
-      row,
-      col,
-      value,
-      time_ms: timeMs,
-      is_correct: true,
-    }])
-    
-    setBoard(prevBoard => {
-      const newBoard = prevBoard.map(r => [...r])
-      newBoard[row][col] = value
-      
-      // Update conflicts
-      const newConflicts = findConflicts(newBoard)
-      setConflicts(newConflicts)
-      
-      return newBoard
-    })
+    // Correct answer - update state
+    setMoveHistory(newMoveHistory)
+    setBoard(newBoard)
+    setConflicts(findConflicts(newBoard))
     
     // Remove from wrong cells if corrected
     setWrongCells(prev => {
@@ -174,8 +163,8 @@ export function useSudoku(passkey) {
       return newSet
     })
     
-    return { valid: true, mistake: false, gameOver: false }
-  }, [originalBoard, solution, isCompleted, isFailed, mistakes])
+    return { valid: true, mistake: false, gameOver: false, newBoard, newMoveHistory }
+  }, [originalBoard, solution, isCompleted, isFailed, mistakes, board, moveHistory])
 
   // Handle erase
   const handleErase = useCallback((row, col) => {

@@ -14,6 +14,7 @@ function Cell({
   isSameNumber,
   isMistake,
   isWrong,
+  maskValue = false,
   row,
   col,
   onClick,
@@ -66,7 +67,7 @@ function Cell({
       `}
       aria-label={`Cell row ${row + 1} column ${col + 1}, value ${value || 'empty'}`}
     >
-      {value !== 0 ? value : ''}
+      {value !== 0 ? (maskValue ? '●' : value) : ''}
     </button>
   )
 }
@@ -81,6 +82,7 @@ export default memo(Cell, (prevProps, nextProps) => {
     prevProps.isConflict === nextProps.isConflict &&
     prevProps.isSameNumber === nextProps.isSameNumber &&
     prevProps.isMistake === nextProps.isMistake &&
-    prevProps.isWrong === nextProps.isWrong
+    prevProps.isWrong === nextProps.isWrong &&
+    prevProps.maskValue === nextProps.maskValue
   )
 })

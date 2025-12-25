@@ -65,31 +65,43 @@ export default function ReplayPage() {
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
-  // Apply a move to the board
+  // Apply a move to the board (values are hidden - we only know if correct/wrong/erase)
   const applyMove = useCallback((move) => {
-    setBoard(prev => {
-      const newBoard = prev.map(row => [...row])
-      newBoard[move.row][move.col] = move.value
-      return newBoard
-    })
+    const cellKey = `${move.row},${move.col}`
     
-    if (!move.is_correct) {
-      setMistakes(m => m + 1)
-      setWrongCells(prev => new Set([...prev, `${move.row},${move.col}`]))
-      setLastMistakeCell({ row: move.row, col: move.col })
-      setTimeout(() => setLastMistakeCell(null), 500)
-    } else if (move.value === 0) {
-      // Erase - remove from wrong cells
+    if (move.is_erase) {
+      // Erase - set to 0 and remove from wrong cells
+      setBoard(prev => {
+        const newBoard = prev.map(row => [...row])
+        newBoard[move.row][move.col] = 0
+        return newBoard
+      })
       setWrongCells(prev => {
         const newSet = new Set(prev)
-        newSet.delete(`${move.row},${move.col}`)
+        newSet.delete(cellKey)
         return newSet
       })
+    } else if (!move.is_correct) {
+      // Wrong move - use placeholder value (1) and mark as wrong
+      setBoard(prev => {
+        const newBoard = prev.map(row => [...row])
+        newBoard[move.row][move.col] = 1 // Placeholder - will be masked anyway
+        return newBoard
+      })
+      setMistakes(m => m + 1)
+      setWrongCells(prev => new Set([...prev, cellKey]))
+      setLastMistakeCell({ row: move.row, col: move.col })
+      setTimeout(() => setLastMistakeCell(null), 500)
     } else {
-      // Correct value - remove from wrong cells if was there
+      // Correct move - use placeholder value (1) and clear wrong state
+      setBoard(prev => {
+        const newBoard = prev.map(row => [...row])
+        newBoard[move.row][move.col] = 1 // Placeholder - will be masked anyway
+        return newBoard
+      })
       setWrongCells(prev => {
         const newSet = new Set(prev)
-        newSet.delete(`${move.row},${move.col}`)
+        newSet.delete(cellKey)
         return newSet
       })
     }
@@ -184,13 +196,21 @@ export default function ReplayPage() {
     let newMistakes = 0
     const newWrongCells = new Set()
     
-    // Replay all moves up to newIndex
+    // Replay all moves up to newIndex (without actual values)
     for (let i = 0; i <= newIndex; i++) {
       const move = replayData.move_history[i]
-      newBoard[move.row][move.col] = move.value
-      if (!move.is_correct) {
+      const cellKey = `${move.row},${move.col}`
+      
+      if (move.is_erase) {
+        newBoard[move.row][move.col] = 0
+        newWrongCells.delete(cellKey)
+      } else if (!move.is_correct) {
+        newBoard[move.row][move.col] = 1 // Placeholder
         newMistakes++
-        newWrongCells.add(`${move.row},${move.col}`)
+        newWrongCells.add(cellKey)
+      } else {
+        newBoard[move.row][move.col] = 1 // Placeholder
+        newWrongCells.delete(cellKey)
       }
     }
     
@@ -302,6 +322,7 @@ export default function ReplayPage() {
                 selectedCell={null}
                 onCellClick={() => {}}
                 mistakeCell={lastMistakeCell}
+                maskUserCells={true}
               />
             </div>
           )}

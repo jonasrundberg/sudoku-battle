@@ -15,30 +15,7 @@ function formatTime(seconds) {
   return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
-function StarRating({ stars }) {
-  const fullStars = Math.floor(stars)
-  const hasHalf = stars - fullStars >= 0.5
-  
-  return (
-    <span className="inline-flex items-center gap-0.5">
-      {[0, 1, 2].map((i) => (
-        <span
-          key={i}
-          className={`text-lg ${
-            i < fullStars
-              ? ''
-              : i === fullStars && hasHalf
-              ? 'opacity-50'
-              : 'grayscale opacity-30'
-          }`}
-        >
-          ⭐
-        </span>
-      ))}
-      <span className="ml-1 text-sm text-gray-600">({stars.toFixed(1)})</span>
-    </span>
-  )
-}
+// StarRating component removed - now just displaying the number
 
 export default function LeaderboardPage() {
   const { inviteCode } = useParams()
@@ -137,87 +114,64 @@ export default function LeaderboardPage() {
 
         {/* Leaderboard table */}
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="px-2 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Name
+                </th>
+                <th className="px-2 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Today
+                </th>
+                <th className="px-2 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Games
+                </th>
+                <th className="px-2 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Stars
+                </th>
+                <th className="px-2 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Avg
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {leaderboard.members.length === 0 ? (
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Rank
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Games
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Avg Stars
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Avg Time
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Last 5 Avg
-                  </th>
+                  <td colSpan={5} className="px-2 py-8 text-center text-gray-500">
+                    {isGlobal ? 'No players yet' : 'No members yet'}
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {leaderboard.members.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
-                      {isGlobal ? 'No players yet' : 'No members yet'}
+              ) : (
+                leaderboard.members.map((member, index) => (
+                  <tr
+                    key={member.username}
+                    className={`${
+                      index === 0 ? 'bg-yellow-50' : index === 1 ? 'bg-gray-50' : index === 2 ? 'bg-orange-50' : ''
+                    } hover:bg-blue-50 transition-colors`}
+                  >
+                    <td className="px-2 py-3 whitespace-nowrap">
+                      <span className="font-semibold text-gray-800">{member.username}</span>
+                    </td>
+                    <td className="px-2 py-3 whitespace-nowrap text-center font-mono text-gray-700">
+                      {member.today_time ? formatTime(member.today_time) : '-'}
+                    </td>
+                    <td className="px-2 py-3 whitespace-nowrap text-center">
+                      <span className="text-green-600 font-semibold">{member.games_completed}</span>
+                      {member.games_failed > 0 && (
+                        <span className="text-red-500 font-semibold ml-1">/ {member.games_failed}</span>
+                      )}
+                    </td>
+                    <td className="px-2 py-3 whitespace-nowrap text-center text-gray-700">
+                      {member.avg_stars.toFixed(1)}
+                    </td>
+                    <td className="px-2 py-3 whitespace-nowrap text-center font-mono text-gray-700">
+                      {formatTime(member.avg_time_all)}
                     </td>
                   </tr>
-                ) : (
-                  leaderboard.members.map((member, index) => (
-                    <tr
-                      key={member.username}
-                      className={`${
-                        index === 0 ? 'bg-yellow-50' : index === 1 ? 'bg-gray-50' : index === 2 ? 'bg-orange-50' : ''
-                      } hover:bg-blue-50 transition-colors`}
-                    >
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        <span className={`
-                          inline-flex items-center justify-center w-8 h-8 rounded-full font-bold
-                          ${index === 0 ? 'bg-yellow-400 text-yellow-900' : ''}
-                          ${index === 1 ? 'bg-gray-300 text-gray-700' : ''}
-                          ${index === 2 ? 'bg-orange-300 text-orange-900' : ''}
-                          ${index > 2 ? 'bg-gray-100 text-gray-600' : ''}
-                        `}>
-                          {index + 1}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        <span className="font-semibold text-gray-800">{member.username}</span>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-center">
-                        <div className="text-sm">
-                          <span className="font-semibold text-gray-800">{member.games_total}</span>
-                          <span className="text-gray-400 mx-1">|</span>
-                          <span className="text-green-600">{member.games_completed}✓</span>
-                          {member.games_failed > 0 && (
-                            <>
-                              <span className="text-gray-400 mx-1">/</span>
-                              <span className="text-red-500">{member.games_failed}✗</span>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-center">
-                        <StarRating stars={member.avg_stars} />
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-center font-mono text-gray-700">
-                        {formatTime(member.avg_time_all)}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-center font-mono text-gray-700">
-                        {formatTime(member.avg_time_last_5)}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
 
         {/* Join CTA */}

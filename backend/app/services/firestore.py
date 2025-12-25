@@ -373,7 +373,7 @@ def create_leaderboard(passkey: str, name: str) -> dict:
 
 
 def join_leaderboard(passkey: str, invite_code: str) -> Optional[dict]:
-    """Join a leaderboard using an invite code."""
+    """Join a leaderboard using an invite code, backfilling historical results."""
     db = get_firestore_client()
 
     # Find leaderboard by invite code
@@ -387,6 +387,7 @@ def join_leaderboard(passkey: str, invite_code: str) -> Optional[dict]:
 
     leaderboard_ref = results_list[0].reference
     leaderboard_data = results_list[0].to_dict()
+    leaderboard_id = leaderboard_data["id"]
 
     # Add member if not already present
     if passkey not in leaderboard_data.get("members", []):
@@ -395,7 +396,54 @@ def join_leaderboard(passkey: str, invite_code: str) -> Optional[dict]:
         })
         leaderboard_data["members"].append(passkey)
 
+        # Backfill historical completed games for this user
+        _backfill_leaderboard_results(leaderboard_id, passkey)
+
     return leaderboard_data
+
+
+def _backfill_leaderboard_results(leaderboard_id: str, passkey: str) -> None:
+    """Backfill all historical completed games for a user joining a leaderboard."""
+    from app.services.puzzle_generator import get_difficulty_for_date
+
+    db = get_firestore_client()
+
+    # Get user info
+    user = get_or_create_user(passkey)
+    username = user.get("username") or f"Player-{passkey[:6]}"
+
+    # Get all completed progress records for this user
+    progress_docs = db.collection("progress").where(
+        filter=FieldFilter("passkey", "==", passkey)
+    ).get()
+
+    for doc in progress_docs:
+        data = doc.to_dict()
+        if not data.get("is_completed"):
+            continue
+
+        puzzle_date_str = data.get("date")
+        if not puzzle_date_str:
+            continue
+
+        time_seconds = data.get("time_seconds", 0)
+        puzzle_date = date.fromisoformat(puzzle_date_str)
+        difficulty_name, _ = get_difficulty_for_date(puzzle_date)
+
+        # Create leaderboard result if it doesn't exist
+        doc_id = f"{leaderboard_id}_{puzzle_date_str}_{passkey}"
+        result_ref = db.collection("leaderboard_results").document(doc_id)
+
+        if not result_ref.get().exists:
+            result_ref.set({
+                "leaderboard_id": leaderboard_id,
+                "date": puzzle_date_str,
+                "passkey": passkey,
+                "username": username,
+                "time_seconds": time_seconds,
+                "difficulty": difficulty_name,
+                "completed_at": datetime.utcnow(),  # Use current time for backfilled
+            })
 
 
 def get_user_leaderboards(passkey: str) -> list[dict]:
@@ -499,6 +547,13 @@ def get_member_leaderboard_stats(leaderboard_id: str, passkey: str) -> dict:
     last_5_times = times[:5]  # Already sorted by completed_at DESC
     avg_time_last_5 = sum(last_5_times) / len(last_5_times) if last_5_times else None
 
+    # Get today's time
+    today_str = date.today().isoformat()
+    today_progress = progress_by_date.get(today_str, {})
+    today_time = None
+    if today_progress.get("is_completed"):
+        today_time = today_progress.get("time_seconds")
+
     return {
         "username": username,
         "games_total": games_total,
@@ -507,6 +562,7 @@ def get_member_leaderboard_stats(leaderboard_id: str, passkey: str) -> dict:
         "avg_stars": round(avg_stars, 2),
         "avg_time_all": round(avg_time_all, 1) if avg_time_all else None,
         "avg_time_last_5": round(avg_time_last_5, 1) if avg_time_last_5 else None,
+        "today_time": today_time,
     }
 
 
@@ -576,6 +632,13 @@ def get_global_top_players(limit: int = 100) -> list[dict]:
         last_5_times = times[:5]
         avg_time_last_5 = sum(last_5_times) / len(last_5_times) if last_5_times else None
 
+        # Get today's time
+        today_str = date.today().isoformat()
+        today_progress = progress_data.get(today_str, {})
+        today_time = None
+        if today_progress.get("is_completed"):
+            today_time = today_progress.get("time_seconds")
+
         player_stats.append({
             "username": username,
             "games_total": games_total,
@@ -584,6 +647,7 @@ def get_global_top_players(limit: int = 100) -> list[dict]:
             "avg_stars": round(avg_stars, 2),
             "avg_time_all": round(avg_time_all, 1) if avg_time_all else None,
             "avg_time_last_5": round(avg_time_last_5, 1) if avg_time_last_5 else None,
+            "today_time": today_time,
         })
 
     # Sort by games_completed descending

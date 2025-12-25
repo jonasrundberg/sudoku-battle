@@ -128,6 +128,18 @@ async def get_replay(
     # Get puzzle for the replay date
     puzzle_data = generate_puzzle(puzzle_date)
 
+    # Transform move history to strip out actual values (prevent cheating)
+    safe_move_history = [
+        {
+            "row": move.get("row"),
+            "col": move.get("col"),
+            "time_ms": move.get("time_ms"),
+            "is_correct": move.get("is_correct"),
+            "is_erase": move.get("value", 0) == 0,
+        }
+        for move in replay_data.get("move_history", [])
+    ]
+
     return ReplayResponse(
         passkey=replay_data["passkey"],
         username=replay_data["username"],
@@ -135,7 +147,7 @@ async def get_replay(
         difficulty=puzzle_data["difficulty"],
         puzzle=puzzle_data["puzzle"],
         time_seconds=replay_data["time_seconds"],
-        move_history=replay_data["move_history"],
+        move_history=safe_move_history,
         is_completed=replay_data["is_completed"],
         is_failed=replay_data.get("is_failed", False),
     )

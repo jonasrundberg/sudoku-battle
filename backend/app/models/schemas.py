@@ -16,6 +16,15 @@ class MoveRecord(BaseModel):
     is_correct: bool = Field(..., description="Whether this move was correct")
 
 
+class ReplayMoveRecord(BaseModel):
+    """A move record for replay - excludes actual value to prevent cheating."""
+    row: int = Field(..., ge=0, le=8, description="Row index (0-8)")
+    col: int = Field(..., ge=0, le=8, description="Column index (0-8)")
+    time_ms: int = Field(..., ge=0, description="Milliseconds since game start")
+    is_correct: bool = Field(..., description="Whether this move was correct")
+    is_erase: bool = Field(default=False, description="Whether this was an erase action")
+
+
 # ============ Puzzle ============
 
 class PuzzleResponse(BaseModel):
@@ -59,7 +68,7 @@ class ReplayResponse(BaseModel):
     difficulty: str
     puzzle: list[list[int]] = Field(..., description="Original puzzle (0 = empty)")
     time_seconds: int
-    move_history: list[MoveRecord]
+    move_history: list[ReplayMoveRecord] = Field(..., description="Move history without actual values")
     is_completed: bool
     is_failed: bool = False
 

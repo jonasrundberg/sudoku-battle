@@ -32,6 +32,7 @@ class LeaderboardMemberStats(BaseModel):
     avg_stars: float
     avg_time_all: Optional[float] = None
     avg_time_last_5: Optional[float] = None
+    today_time: Optional[int] = None  # Time for today's puzzle, None if not completed
 
 
 class LeaderboardFullStatsResponse(BaseModel):

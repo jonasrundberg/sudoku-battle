@@ -74,8 +74,8 @@ async def get_leaderboard_by_code(invite_code: str):
 
     # Get stats for all members
     member_stats = []
-    for member_passkey in leaderboard.get("members", []):
-        stats = firestore.get_member_leaderboard_stats(leaderboard["id"], member_passkey)
+    for member_user_id in leaderboard.get("members", []):
+        stats = firestore.get_member_leaderboard_stats(leaderboard["id"], member_user_id)
         member_stats.append(LeaderboardMemberStats(**stats))
 
     # Sort by avg_stars descending, then avg_time_all ascending
@@ -89,12 +89,12 @@ async def get_leaderboard_by_code(invite_code: str):
     )
 
 
-@router.get("/leaderboards/{passkey}", response_model=LeaderboardListResponse)
-async def get_user_leaderboards(passkey: str):
+@router.get("/leaderboards/{user_id}", response_model=LeaderboardListResponse)
+async def get_user_leaderboards(user_id: str):
     """
     Get all leaderboards the user is a member of.
     """
-    leaderboards = firestore.get_user_leaderboards(passkey)
+    leaderboards = firestore.get_user_leaderboards(user_id)
 
     return LeaderboardListResponse(
         leaderboards=[
@@ -121,10 +121,10 @@ async def create_leaderboard(request: LeaderboardCreateRequest):
         raise HTTPException(status_code=400, detail="Leaderboard name cannot be empty")
 
     # Ensure user exists
-    firestore.get_or_create_user(request.passkey)
+    firestore.get_or_create_user(request.user_id)
 
     leaderboard = firestore.create_leaderboard(
-        passkey=request.passkey,
+        user_id=request.user_id,
         name=request.name.strip(),
     )
 
@@ -143,10 +143,10 @@ async def join_leaderboard(request: LeaderboardJoinRequest):
     Join a leaderboard using an invite code.
     """
     # Ensure user exists
-    firestore.get_or_create_user(request.passkey)
+    firestore.get_or_create_user(request.user_id)
 
     leaderboard = firestore.join_leaderboard(
-        passkey=request.passkey,
+        user_id=request.user_id,
         invite_code=request.invite_code.strip().upper(),
     )
 
@@ -194,11 +194,11 @@ async def get_leaderboard_results(leaderboard_id: str):
         )
 
     # Add members who haven't completed yet
-    completed_passkeys = {r["passkey"] for r in results}
-    for member_passkey in leaderboard.get("members", []):
-        if member_passkey not in completed_passkeys:
-            user = firestore.get_or_create_user(member_passkey)
-            username = user.get("username") or f"Player-{member_passkey[:6]}"
+    completed_user_ids = {r["user_id"] for r in results}
+    for member_user_id in leaderboard.get("members", []):
+        if member_user_id not in completed_user_ids:
+            user = firestore.get_or_create_user(member_user_id)
+            username = user.get("username") or f"Player-{member_user_id[:6]}"
             member_results.append(
                 LeaderboardMemberResult(
                     username=username,

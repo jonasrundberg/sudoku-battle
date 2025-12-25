@@ -9,7 +9,7 @@ import { findConflicts } from '../utils/validation'
 
 const MAX_MISTAKES = 3
 
-export function useSudoku(passkey) {
+export function useSudoku(userId) {
   // Puzzle data from server
   const [puzzle, setPuzzle] = useState(null)
   const [solution, setSolution] = useState(null)
@@ -55,10 +55,10 @@ export function useSudoku(passkey) {
 
   // Load saved progress from server
   const loadProgress = useCallback(async () => {
-    if (!passkey) return null
+    if (!userId) return null
 
     try {
-      const progress = await getProgress(passkey)
+      const progress = await getProgress(userId)
       
       if (progress) {
         // Restore move history if available
@@ -86,18 +86,18 @@ export function useSudoku(passkey) {
       console.error('Failed to load progress:', error)
       return null
     }
-  }, [passkey])
+  }, [userId])
 
   // Save progress to server
   const saveProgressToServer = useCallback(async (currentBoard, timeSeconds, isPaused = false, currentMistakes = 0, currentMoveHistory = null) => {
-    if (!passkey || isCompleted || isFailed) return
+    if (!userId || isCompleted || isFailed) return
 
     try {
-      await saveProgress(passkey, currentBoard, timeSeconds, isPaused, currentMistakes, currentMoveHistory || moveHistory)
+      await saveProgress(userId, currentBoard, timeSeconds, isPaused, currentMistakes, currentMoveHistory || moveHistory)
     } catch (error) {
       console.error('Failed to save progress:', error)
     }
-  }, [passkey, isCompleted, isFailed, moveHistory])
+  }, [userId, isCompleted, isFailed, moveHistory])
 
   // Handle cell input - returns true if correct, false if wrong
   // Also returns newBoard and newMoveHistory to avoid stale closure issues when saving
@@ -205,10 +205,10 @@ export function useSudoku(passkey) {
 
   // Verify and complete puzzle
   const verifyAndComplete = useCallback(async (timeSeconds) => {
-    if (!passkey || isCompleted || isFailed) return { is_correct: false, message: 'Already completed or failed' }
+    if (!userId || isCompleted || isFailed) return { is_correct: false, message: 'Already completed or failed' }
 
     try {
-      const result = await verifySolution(passkey, board, timeSeconds)
+      const result = await verifySolution(userId, board, timeSeconds)
       
       if (result.is_correct) {
         setIsCompleted(true)
@@ -219,7 +219,7 @@ export function useSudoku(passkey) {
       console.error('Failed to verify solution:', error)
       return { is_correct: false, message: 'Verification failed' }
     }
-  }, [passkey, board, isCompleted, isFailed])
+  }, [userId, board, isCompleted, isFailed])
 
   return {
     // Data

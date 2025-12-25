@@ -46,11 +46,11 @@ async def get_today_stats():
 
 
 @router.get("/puzzle/today/friends")
-async def get_friends_completions(passkey: str):
+async def get_friends_completions(user_id: str):
     """
     Get friends who completed today's puzzle.
     Friends are users who share at least one leaderboard with the user.
     Sorted by number of shared leaderboards (most shared first).
     """
-    friends = firestore.get_friends_completions_today(passkey)
+    friends = firestore.get_friends_completions_today(user_id)
     return {"friends": friends}

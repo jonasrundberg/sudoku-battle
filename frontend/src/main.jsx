@@ -13,8 +13,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Route path="/" element={<App />} />
         <Route path="/leaderboard" element={<LeaderboardPage />} />
         <Route path="/leaderboard/:inviteCode" element={<LeaderboardPage />} />
-        <Route path="/replay/:targetPasskey" element={<ReplayPage />} />
-        <Route path="/replay/:targetPasskey/:date" element={<ReplayPage />} />
+        <Route path="/replay/:targetUserId" element={<ReplayPage />} />
+        <Route path="/replay/:targetUserId/:date" element={<ReplayPage />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>,

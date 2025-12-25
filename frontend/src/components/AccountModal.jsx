@@ -14,7 +14,7 @@ import {
   checkPasskeyRegistered,
 } from '../utils/api'
 
-export default function AccountModal({ passkey, onPasskeyChange, onClose }) {
+export default function AccountModal({ userId, onUserIdChange, onClose }) {
   const [username, setUsername] = useState('')
   const [originalUsername, setOriginalUsername] = useState('')
   const [hasPasskey, setHasPasskey] = useState(false)
@@ -26,13 +26,13 @@ export default function AccountModal({ passkey, onPasskeyChange, onClose }) {
 
   useEffect(() => {
     loadAccountData()
-  }, [passkey])
+  }, [userId])
 
   const loadAccountData = async () => {
     try {
       const [stats, passkeyStatus] = await Promise.all([
-        getUserStats(passkey),
-        checkPasskeyRegistered(passkey),
+        getUserStats(userId),
+        checkPasskeyRegistered(userId),
       ])
       setUsername(stats.username || '')
       setOriginalUsername(stats.username || '')
@@ -57,7 +57,7 @@ export default function AccountModal({ passkey, onPasskeyChange, onClose }) {
     setError(null)
 
     try {
-      await saveUsername(passkey, username.trim())
+      await saveUsername(userId, username.trim())
       setOriginalUsername(username.trim())
       setSuccess('Username saved!')
       setTimeout(() => setSuccess(null), 2000)
@@ -73,9 +73,9 @@ export default function AccountModal({ passkey, onPasskeyChange, onClose }) {
     setError(null)
 
     try {
-      const options = await startPasskeyRegistration(passkey, username.trim() || null)
-      const credential = await startRegistration(options)
-      await finishPasskeyRegistration(passkey, credential)
+      const options = await startPasskeyRegistration(userId, username.trim() || null)
+      const credential = await startRegistration({ optionsJSON: options })
+      await finishPasskeyRegistration(userId, credential)
 
       setHasPasskey(true)
       setSuccess('Passkey created! You can now sign in on other devices.')
@@ -95,13 +95,13 @@ export default function AccountModal({ passkey, onPasskeyChange, onClose }) {
     try {
       const options = await startPasskeyLogin()
       const sessionId = options.sessionId
-      const credential = await startAuthentication(options)
+      const credential = await startAuthentication({ optionsJSON: options })
       credential.sessionId = sessionId
 
       const result = await finishPasskeyLogin(credential)
 
-      localStorage.setItem('sudoku_battle_passkey', result.passkey)
-      onPasskeyChange(result.passkey)
+      localStorage.setItem('sudoku_battle_user_id', result.user_id)
+      onUserIdChange(result.user_id)
 
       setSuccess(`Welcome back, ${result.username || 'Player'}!`)
       setTimeout(() => onClose(), 1500)

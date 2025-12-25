@@ -40,7 +40,7 @@ class PuzzleResponse(BaseModel):
 
 class ProgressRequest(BaseModel):
     """Request to save user progress."""
-    passkey: str = Field(..., min_length=1, description="User's unique passkey")
+    user_id: str = Field(..., min_length=1, description="User's unique ID")
     board: list[list[int]] = Field(..., description="Current board state (0 = empty)")
     time_seconds: int = Field(..., ge=0, description="Time spent in seconds")
     is_paused: bool = Field(default=False, description="Whether the game is paused")
@@ -62,7 +62,7 @@ class ProgressResponse(BaseModel):
 
 class ReplayResponse(BaseModel):
     """Response containing replay data for a friend's completed game."""
-    passkey: str
+    user_id: str
     username: str
     date: str
     difficulty: str
@@ -77,7 +77,7 @@ class ReplayResponse(BaseModel):
 
 class VerifyRequest(BaseModel):
     """Request to verify a completed puzzle."""
-    passkey: str = Field(..., min_length=1, description="User's unique passkey")
+    user_id: str = Field(..., min_length=1, description="User's unique ID")
     board: list[list[int]] = Field(..., description="Completed board to verify")
     time_seconds: int = Field(..., ge=0, description="Completion time in seconds")
 
@@ -92,7 +92,7 @@ class VerifyResponse(BaseModel):
 
 class UsernameRequest(BaseModel):
     """Request to set/update username."""
-    passkey: str = Field(..., min_length=1, description="User's unique passkey")
+    user_id: str = Field(..., min_length=1, description="User's unique ID")
     username: str = Field(..., min_length=1, max_length=20, description="Display name")
 
 
@@ -118,7 +118,7 @@ class UserStatsResponse(BaseModel):
 
 class LeaderboardCreateRequest(BaseModel):
     """Request to create a new leaderboard."""
-    passkey: str = Field(..., min_length=1, description="Creator's passkey")
+    user_id: str = Field(..., min_length=1, description="Creator's user ID")
     name: str = Field(..., min_length=1, max_length=50, description="Leaderboard name")
 
 
@@ -133,7 +133,7 @@ class LeaderboardResponse(BaseModel):
 
 class LeaderboardJoinRequest(BaseModel):
     """Request to join a leaderboard."""
-    passkey: str = Field(..., min_length=1, description="User's passkey")
+    user_id: str = Field(..., min_length=1, description="User's unique ID")
     invite_code: str = Field(..., min_length=1, description="Invite code to join")
 
 

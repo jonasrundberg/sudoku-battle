@@ -3,9 +3,10 @@ Firestore client wrapper for all database operations.
 
 Collections:
 - users: User profiles and stats
-- progress: User puzzle progress (in-progress games)
+- progress: User puzzle progress (completed, failed, and in-progress games)
 - leaderboards: Private leaderboard definitions
-- leaderboard_results: User results within leaderboards
+- auth_challenges: Temporary WebAuthn challenges
+- credentials: WebAuthn credentials for cross-device sync
 """
 
 import os
@@ -49,14 +50,14 @@ def generate_invite_code(length: int = 8) -> str:
 
 # ============ User Operations ============
 
-def get_or_create_user(passkey: str) -> dict:
+def get_or_create_user(user_id: str) -> dict:
     """
-    Get user by passkey, or create if doesn't exist.
+    Get user by user_id, or create if doesn't exist.
 
     Returns user document data.
     """
     db = get_firestore_client()
-    user_ref = db.collection("users").document(passkey)
+    user_ref = db.collection("users").document(user_id)
     user_doc = user_ref.get()
 
     if user_doc.exists:
@@ -84,17 +85,17 @@ def get_or_create_user(passkey: str) -> dict:
     return new_user
 
 
-def update_username(passkey: str, username: str) -> dict:
+def update_username(user_id: str, username: str) -> dict:
     """Update user's display name."""
     db = get_firestore_client()
-    user_ref = db.collection("users").document(passkey)
+    user_ref = db.collection("users").document(user_id)
     user_ref.update({"username": username})
-    return get_or_create_user(passkey)
+    return get_or_create_user(user_id)
 
 
-def get_user_stats(passkey: str) -> dict:
+def get_user_stats(user_id: str) -> dict:
     """Get user's statistics."""
-    user = get_or_create_user(passkey)
+    user = get_or_create_user(user_id)
     return {
         "username": user.get("username"),
         **user.get("stats", {}),
@@ -102,7 +103,7 @@ def get_user_stats(passkey: str) -> dict:
 
 
 def update_user_stats_on_completion(
-    passkey: str,
+    user_id: str,
     time_seconds: int,
     difficulty: str,
     completed_date: date
@@ -113,8 +114,8 @@ def update_user_stats_on_completion(
     Updates: total_completed, total_time, best_times, streaks
     """
     db = get_firestore_client()
-    user_ref = db.collection("users").document(passkey)
-    user = get_or_create_user(passkey)
+    user_ref = db.collection("users").document(user_id)
+    user = get_or_create_user(user_id)
     stats = user.get("stats", {})
 
     # Update totals
@@ -171,7 +172,7 @@ def get_today_player_count() -> int:
     return len(list(results))
 
 
-def get_friends_completions_today(passkey: str) -> list[dict]:
+def get_friends_completions_today(user_id: str) -> list[dict]:
     """
     Get friends who completed today's puzzle, sorted by shared leaderboard count.
 
@@ -182,7 +183,7 @@ def get_friends_completions_today(passkey: str) -> list[dict]:
 
     # Get all leaderboards this user is on
     leaderboards = db.collection("leaderboards").where(
-        filter=FieldFilter("members", "array_contains", passkey)
+        filter=FieldFilter("members", "array_contains", user_id)
     ).get()
 
     # Count how many leaderboards each friend shares with this user
@@ -190,7 +191,7 @@ def get_friends_completions_today(passkey: str) -> list[dict]:
     for lb in leaderboards:
         lb_data = lb.to_dict()
         for member in lb_data.get("members", []):
-            if member != passkey:
+            if member != user_id:
                 friend_leaderboard_count[member] = friend_leaderboard_count.get(member, 0) + 1
 
     if not friend_leaderboard_count:
@@ -198,13 +199,13 @@ def get_friends_completions_today(passkey: str) -> list[dict]:
 
     # Get today's completions for all friends
     friends_completions = []
-    for friend_passkey, shared_count in friend_leaderboard_count.items():
-        progress = get_progress(friend_passkey, date.today())
+    for friend_user_id, shared_count in friend_leaderboard_count.items():
+        progress = get_progress(friend_user_id, date.today())
         if progress and progress.get("is_completed"):
-            user = get_or_create_user(friend_passkey)
+            user = get_or_create_user(friend_user_id)
             friends_completions.append({
-                "passkey": friend_passkey,
-                "username": user.get("username") or f"Player-{friend_passkey[:6]}",
+                "user_id": friend_user_id,
+                "username": user.get("username") or f"Player-{friend_user_id[:6]}",
                 "time_seconds": progress.get("time_seconds", 0),
                 "shared_leaderboards": shared_count,
             })
@@ -227,10 +228,10 @@ def unflatten_board(flat_board: list[int]) -> list[list[int]]:
     return [flat_board[i*9:(i+1)*9] for i in range(9)]
 
 
-def get_progress(passkey: str, puzzle_date: date) -> Optional[dict]:
+def get_progress(user_id: str, puzzle_date: date) -> Optional[dict]:
     """Get user's progress for a specific puzzle date."""
     db = get_firestore_client()
-    doc_id = f"{passkey}_{puzzle_date.isoformat()}"
+    doc_id = f"{user_id}_{puzzle_date.isoformat()}"
     progress_ref = db.collection("progress").document(doc_id)
     progress_doc = progress_ref.get()
 
@@ -244,7 +245,7 @@ def get_progress(passkey: str, puzzle_date: date) -> Optional[dict]:
 
 
 def save_progress(
-    passkey: str,
+    user_id: str,
     puzzle_date: date,
     board: list[list[int]],
     time_seconds: int,
@@ -256,14 +257,14 @@ def save_progress(
 ) -> dict:
     """Save user's progress on a puzzle."""
     db = get_firestore_client()
-    doc_id = f"{passkey}_{puzzle_date.isoformat()}"
+    doc_id = f"{user_id}_{puzzle_date.isoformat()}"
     progress_ref = db.collection("progress").document(doc_id)
 
     # Flatten board for Firestore storage (doesn't support nested arrays)
     flat_board = flatten_board(board) if board else []
 
     data = {
-        "passkey": passkey,
+        "user_id": user_id,
         "date": puzzle_date.isoformat(),
         "board": flat_board,
         "time_seconds": time_seconds,
@@ -292,7 +293,7 @@ def save_progress(
 
 
 def mark_completed(
-    passkey: str,
+    user_id: str,
     puzzle_date: date,
     time_seconds: int,
     difficulty: str
@@ -300,7 +301,7 @@ def mark_completed(
     """Mark a puzzle as completed and update user stats."""
     # Save final progress
     save_progress(
-        passkey=passkey,
+        user_id=user_id,
         puzzle_date=puzzle_date,
         board=[],  # Not storing final board
         time_seconds=time_seconds,
@@ -309,16 +310,16 @@ def mark_completed(
     )
 
     # Update user stats
-    update_user_stats_on_completion(passkey, time_seconds, difficulty, puzzle_date)
+    update_user_stats_on_completion(user_id, time_seconds, difficulty, puzzle_date)
 
 
-def get_replay_data(passkey: str, puzzle_date: date) -> Optional[dict]:
+def get_replay_data(user_id: str, puzzle_date: date) -> Optional[dict]:
     """
     Get replay data for a user's completed game.
 
     Returns move history and game metadata for playback.
     """
-    progress = get_progress(passkey, puzzle_date)
+    progress = get_progress(user_id, puzzle_date)
 
     if not progress:
         return None
@@ -327,11 +328,11 @@ def get_replay_data(passkey: str, puzzle_date: date) -> Optional[dict]:
     if not progress.get("is_completed") and not progress.get("is_failed"):
         return None
 
-    user = get_or_create_user(passkey)
+    user = get_or_create_user(user_id)
 
     return {
-        "passkey": passkey,
-        "username": user.get("username") or f"Player-{passkey[:6]}",
+        "user_id": user_id,
+        "username": user.get("username") or f"Player-{user_id[:6]}",
         "date": progress.get("date"),
         "time_seconds": progress.get("time_seconds", 0),
         "move_history": progress.get("move_history", []),
@@ -342,7 +343,7 @@ def get_replay_data(passkey: str, puzzle_date: date) -> Optional[dict]:
 
 # ============ Leaderboard Operations ============
 
-def create_leaderboard(passkey: str, name: str) -> dict:
+def create_leaderboard(user_id: str, name: str) -> dict:
     """Create a new private leaderboard."""
     db = get_firestore_client()
 
@@ -363,17 +364,17 @@ def create_leaderboard(passkey: str, name: str) -> dict:
         "id": leaderboard_ref.id,
         "name": name,
         "invite_code": invite_code,
-        "created_by": passkey,
+        "created_by": user_id,
         "created_at": datetime.utcnow(),
-        "members": [passkey],
+        "members": [user_id],
     }
     leaderboard_ref.set(leaderboard_data)
 
     return leaderboard_data
 
 
-def join_leaderboard(passkey: str, invite_code: str) -> Optional[dict]:
-    """Join a leaderboard using an invite code, backfilling historical results."""
+def join_leaderboard(user_id: str, invite_code: str) -> Optional[dict]:
+    """Join a leaderboard using an invite code."""
     db = get_firestore_client()
 
     # Find leaderboard by invite code
@@ -387,71 +388,23 @@ def join_leaderboard(passkey: str, invite_code: str) -> Optional[dict]:
 
     leaderboard_ref = results_list[0].reference
     leaderboard_data = results_list[0].to_dict()
-    leaderboard_id = leaderboard_data["id"]
 
     # Add member if not already present
-    if passkey not in leaderboard_data.get("members", []):
+    if user_id not in leaderboard_data.get("members", []):
         leaderboard_ref.update({
-            "members": firestore.ArrayUnion([passkey])
+            "members": firestore.ArrayUnion([user_id])
         })
-        leaderboard_data["members"].append(passkey)
-
-        # Backfill historical completed games for this user
-        _backfill_leaderboard_results(leaderboard_id, passkey)
+        leaderboard_data["members"].append(user_id)
 
     return leaderboard_data
 
 
-def _backfill_leaderboard_results(leaderboard_id: str, passkey: str) -> None:
-    """Backfill all historical completed games for a user joining a leaderboard."""
-    from app.services.puzzle_generator import get_difficulty_for_date
-
-    db = get_firestore_client()
-
-    # Get user info
-    user = get_or_create_user(passkey)
-    username = user.get("username") or f"Player-{passkey[:6]}"
-
-    # Get all completed progress records for this user
-    progress_docs = db.collection("progress").where(
-        filter=FieldFilter("passkey", "==", passkey)
-    ).get()
-
-    for doc in progress_docs:
-        data = doc.to_dict()
-        if not data.get("is_completed"):
-            continue
-
-        puzzle_date_str = data.get("date")
-        if not puzzle_date_str:
-            continue
-
-        time_seconds = data.get("time_seconds", 0)
-        puzzle_date = date.fromisoformat(puzzle_date_str)
-        difficulty_name, _ = get_difficulty_for_date(puzzle_date)
-
-        # Create leaderboard result if it doesn't exist
-        doc_id = f"{leaderboard_id}_{puzzle_date_str}_{passkey}"
-        result_ref = db.collection("leaderboard_results").document(doc_id)
-
-        if not result_ref.get().exists:
-            result_ref.set({
-                "leaderboard_id": leaderboard_id,
-                "date": puzzle_date_str,
-                "passkey": passkey,
-                "username": username,
-                "time_seconds": time_seconds,
-                "difficulty": difficulty_name,
-                "completed_at": datetime.utcnow(),  # Use current time for backfilled
-            })
-
-
-def get_user_leaderboards(passkey: str) -> list[dict]:
+def get_user_leaderboards(user_id: str) -> list[dict]:
     """Get all leaderboards a user is a member of."""
     db = get_firestore_client()
 
     results = db.collection("leaderboards").where(
-        filter=FieldFilter("members", "array_contains", passkey)
+        filter=FieldFilter("members", "array_contains", user_id)
     ).get()
 
     return [doc.to_dict() for doc in results]
@@ -482,9 +435,9 @@ def get_leaderboard_by_invite_code(invite_code: str) -> Optional[dict]:
     return results_list[0].to_dict()
 
 
-def get_member_leaderboard_stats(leaderboard_id: str, passkey: str) -> dict:
+def get_member_leaderboard_stats(leaderboard_id: str, user_id: str) -> dict:
     """
-    Get comprehensive stats for a member within a leaderboard.
+    Get comprehensive stats for a member based on their progress records.
 
     Returns:
         - username
@@ -494,65 +447,60 @@ def get_member_leaderboard_stats(leaderboard_id: str, passkey: str) -> dict:
         - avg_stars (3 - avg_mistakes for completed games)
         - avg_time_all (average time for all completed games)
         - avg_time_last_5 (average time for last 5 completed games)
+        - today_time (time for today's puzzle if completed)
     """
     db = get_firestore_client()
 
     # Get user info
-    user = get_or_create_user(passkey)
-    username = user.get("username") or f"Player-{passkey[:6]}"
+    user = get_or_create_user(user_id)
+    username = user.get("username") or f"Player-{user_id[:6]}"
 
-    # Get all results for this member in this leaderboard
-    results = db.collection("leaderboard_results").where(
-        filter=FieldFilter("leaderboard_id", "==", leaderboard_id)
-    ).where(
-        filter=FieldFilter("passkey", "==", passkey)
-    ).get()
-
-    results_list = [doc.to_dict() for doc in results]
-    # Sort by completed_at descending in Python to avoid needing a composite index
-    results_list.sort(key=lambda x: x.get("completed_at", datetime.min), reverse=True)
-
-    # Get progress data for failed games count and mistakes
-    # We need to query progress collection for this user
+    # Get all progress records for this user
     progress_docs = db.collection("progress").where(
-        filter=FieldFilter("passkey", "==", passkey)
+        filter=FieldFilter("user_id", "==", user_id)
     ).get()
 
-    progress_by_date = {}
-    for doc in progress_docs:
-        data = doc.to_dict()
-        progress_by_date[data.get("date")] = data
+    progress_list = list(progress_docs)
 
-    games_completed = len(results_list)
-    games_failed = sum(1 for p in progress_by_date.values() if p.get("is_failed", False))
+    # Build stats from progress records
+    completed_games = []
+    games_failed = 0
+
+    for doc in progress_list:
+        data = doc.to_dict()
+        if data.get("is_completed"):
+            completed_games.append(data)
+        elif data.get("is_failed"):
+            games_failed += 1
+
+    games_completed = len(completed_games)
     games_total = games_completed + games_failed
 
-    # Calculate avg_stars (based on mistakes in progress records)
-    total_stars = 0
-    star_count = 0
-    for result in results_list:
-        result_date = result.get("date")
-        progress = progress_by_date.get(result_date, {})
-        mistakes = progress.get("mistakes", 0)
-        stars = max(0, 3 - mistakes)  # 3 stars max, minus mistakes
-        total_stars += stars
-        star_count += 1
+    # Sort completed games by date descending
+    completed_games.sort(key=lambda x: x.get("date", ""), reverse=True)
 
-    avg_stars = total_stars / star_count if star_count > 0 else 0
+    # Calculate avg_stars (based on mistakes in completed games)
+    total_stars = 0
+    for game in completed_games:
+        mistakes = game.get("mistakes", 0)
+        stars = max(0, 3 - mistakes)
+        total_stars += stars
+    avg_stars = total_stars / games_completed if games_completed > 0 else 0
 
     # Calculate avg times
-    times = [r.get("time_seconds") for r in results_list if r.get("time_seconds")]
+    times = [g.get("time_seconds") for g in completed_games if g.get("time_seconds")]
     avg_time_all = sum(times) / len(times) if times else None
 
-    last_5_times = times[:5]  # Already sorted by completed_at DESC
+    last_5_times = times[:5]
     avg_time_last_5 = sum(last_5_times) / len(last_5_times) if last_5_times else None
 
     # Get today's time
     today_str = date.today().isoformat()
-    today_progress = progress_by_date.get(today_str, {})
     today_time = None
-    if today_progress.get("is_completed"):
-        today_time = today_progress.get("time_seconds")
+    for game in completed_games:
+        if game.get("date") == today_str:
+            today_time = game.get("time_seconds")
+            break
 
     return {
         "username": username,
@@ -574,59 +522,48 @@ def get_global_top_players(limit: int = 100) -> list[dict]:
     """
     db = get_firestore_client()
 
-    # Get all leaderboard_results grouped by passkey
-    all_results = db.collection("leaderboard_results").get()
-
-    # Group results by passkey
-    results_by_passkey = {}
-    for doc in all_results:
-        data = doc.to_dict()
-        passkey = data.get("passkey")
-        if passkey:
-            if passkey not in results_by_passkey:
-                results_by_passkey[passkey] = []
-            results_by_passkey[passkey].append(data)
-
-    # Also get progress for failed games and mistakes
+    # Get all progress records
     all_progress = db.collection("progress").get()
-    progress_by_passkey = {}
+
+    # Group progress by user_id
+    progress_by_user = {}
     for doc in all_progress:
         data = doc.to_dict()
-        passkey = data.get("passkey")
-        if passkey:
-            if passkey not in progress_by_passkey:
-                progress_by_passkey[passkey] = {}
-            progress_by_passkey[passkey][data.get("date")] = data
+        uid = data.get("user_id")
+        if uid:
+            if uid not in progress_by_user:
+                progress_by_user[uid] = []
+            progress_by_user[uid].append(data)
 
     # Calculate stats for each player
     player_stats = []
-    for passkey, results in results_by_passkey.items():
+    for user_id, progress_list in progress_by_user.items():
         # Get user info
-        user = get_or_create_user(passkey)
-        username = user.get("username") or f"Player-{passkey[:6]}"
+        user = get_or_create_user(user_id)
+        username = user.get("username") or f"Player-{user_id[:6]}"
 
-        # Sort results by completed_at descending
-        results.sort(key=lambda x: x.get("completed_at", datetime.min), reverse=True)
-
-        games_completed = len(results)
-        progress_data = progress_by_passkey.get(passkey, {})
-        games_failed = sum(1 for p in progress_data.values() if p.get("is_failed", False))
+        # Separate completed and failed games
+        completed_games = [p for p in progress_list if p.get("is_completed")]
+        games_failed = sum(1 for p in progress_list if p.get("is_failed"))
+        games_completed = len(completed_games)
         games_total = games_completed + games_failed
+
+        if games_completed == 0:
+            continue  # Skip users with no completions
+
+        # Sort completed games by date descending
+        completed_games.sort(key=lambda x: x.get("date", ""), reverse=True)
 
         # Calculate avg_stars
         total_stars = 0
-        star_count = 0
-        for result in results:
-            result_date = result.get("date")
-            progress = progress_data.get(result_date, {})
-            mistakes = progress.get("mistakes", 0)
+        for game in completed_games:
+            mistakes = game.get("mistakes", 0)
             stars = max(0, 3 - mistakes)
             total_stars += stars
-            star_count += 1
-        avg_stars = total_stars / star_count if star_count > 0 else 0
+        avg_stars = total_stars / games_completed if games_completed > 0 else 0
 
         # Calculate avg times
-        times = [r.get("time_seconds") for r in results if r.get("time_seconds")]
+        times = [g.get("time_seconds") for g in completed_games if g.get("time_seconds")]
         avg_time_all = sum(times) / len(times) if times else None
 
         last_5_times = times[:5]
@@ -634,10 +571,11 @@ def get_global_top_players(limit: int = 100) -> list[dict]:
 
         # Get today's time
         today_str = date.today().isoformat()
-        today_progress = progress_data.get(today_str, {})
         today_time = None
-        if today_progress.get("is_completed"):
-            today_time = today_progress.get("time_seconds")
+        for game in completed_games:
+            if game.get("date") == today_str:
+                today_time = game.get("time_seconds")
+                break
 
         player_stats.append({
             "username": username,
@@ -656,64 +594,36 @@ def get_global_top_players(limit: int = 100) -> list[dict]:
     return player_stats[:limit]
 
 
-def save_leaderboard_result(
-    leaderboard_id: str,
-    passkey: str,
-    puzzle_date: date,
-    time_seconds: int,
-    difficulty: str
-) -> None:
-    """Save a user's result to a leaderboard."""
-    db = get_firestore_client()
-
-    # Get username
-    user = get_or_create_user(passkey)
-    username = user.get("username") or f"Player-{passkey[:6]}"
-
-    doc_id = f"{leaderboard_id}_{puzzle_date.isoformat()}_{passkey}"
-    result_ref = db.collection("leaderboard_results").document(doc_id)
-
-    result_ref.set({
-        "leaderboard_id": leaderboard_id,
-        "date": puzzle_date.isoformat(),
-        "passkey": passkey,
-        "username": username,
-        "time_seconds": time_seconds,
-        "difficulty": difficulty,
-        "completed_at": datetime.utcnow(),
-    })
-
-
 def get_leaderboard_results(leaderboard_id: str, puzzle_date: date) -> list[dict]:
-    """Get all results for a leaderboard on a specific date."""
+    """Get all results for a leaderboard on a specific date (from progress collection)."""
     db = get_firestore_client()
 
-    results = db.collection("leaderboard_results").where(
-        filter=FieldFilter("leaderboard_id", "==", leaderboard_id)
-    ).where(
-        filter=FieldFilter("date", "==", puzzle_date.isoformat())
-    ).order_by("time_seconds").get()
+    # Get leaderboard members
+    leaderboard = get_leaderboard(leaderboard_id)
+    if not leaderboard:
+        return []
 
-    return [doc.to_dict() for doc in results]
+    members = leaderboard.get("members", [])
+    if not members:
+        return []
 
+    # Get progress for each member on this date
+    results = []
+    for user_id in members:
+        progress = get_progress(user_id, puzzle_date)
+        if progress and progress.get("is_completed"):
+            user = get_or_create_user(user_id)
+            results.append({
+                "user_id": user_id,
+                "username": user.get("username") or f"Player-{user_id[:6]}",
+                "time_seconds": progress.get("time_seconds"),
+                "completed_at": progress.get("completed_at"),
+            })
 
-def record_completion_to_leaderboards(
-    passkey: str,
-    puzzle_date: date,
-    time_seconds: int,
-    difficulty: str
-) -> None:
-    """Record a completion to all leaderboards the user is a member of."""
-    leaderboards = get_user_leaderboards(passkey)
+    # Sort by time
+    results.sort(key=lambda x: x.get("time_seconds") or float('inf'))
 
-    for lb in leaderboards:
-        save_leaderboard_result(
-            leaderboard_id=lb["id"],
-            passkey=passkey,
-            puzzle_date=puzzle_date,
-            time_seconds=time_seconds,
-            difficulty=difficulty,
-        )
+    return results
 
 
 # ============ WebAuthn/Passkey Operations ============
@@ -749,7 +659,7 @@ def delete_auth_challenge(identifier: str) -> None:
 
 
 def store_user_credential(
-    passkey: str,
+    user_id: str,
     credential_id: str,
     public_key: str,
     sign_count: int,
@@ -758,7 +668,7 @@ def store_user_credential(
     db = get_firestore_client()
     doc_ref = db.collection("credentials").document(credential_id)
     doc_ref.set({
-        "passkey": passkey,
+        "user_id": user_id,
         "credential_id": credential_id,
         "public_key": public_key,
         "sign_count": sign_count,
@@ -766,11 +676,11 @@ def store_user_credential(
     })
 
 
-def get_user_credentials(passkey: str) -> list[dict]:
+def get_user_credentials(user_id: str) -> list[dict]:
     """Get all WebAuthn credentials for a user."""
     db = get_firestore_client()
     results = db.collection("credentials").where(
-        filter=FieldFilter("passkey", "==", passkey)
+        filter=FieldFilter("user_id", "==", user_id)
     ).get()
     return [doc.to_dict() for doc in results]
 
@@ -785,7 +695,7 @@ def get_credential_by_id(credential_id: str) -> Optional[dict]:
 
 
 def update_credential_sign_count(
-    passkey: str,
+    user_id: str,
     credential_id: str,
     sign_count: int,
 ) -> None:

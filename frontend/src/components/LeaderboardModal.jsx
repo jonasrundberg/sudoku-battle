@@ -11,7 +11,7 @@ import {
   getLeaderboardResults,
 } from '../utils/api'
 
-export default function LeaderboardModal({ passkey, onClose }) {
+export default function LeaderboardModal({ userId, onClose }) {
   const navigate = useNavigate()
   const [leaderboards, setLeaderboards] = useState([])
   const [loading, setLoading] = useState(true)
@@ -27,11 +27,11 @@ export default function LeaderboardModal({ passkey, onClose }) {
 
   useEffect(() => {
     loadLeaderboards()
-  }, [passkey])
+  }, [userId])
 
   const loadLeaderboards = async () => {
     try {
-      const data = await getUserLeaderboards(passkey)
+      const data = await getUserLeaderboards(userId)
       setLeaderboards(data.leaderboards)
     } catch (err) {
       console.error('Failed to load leaderboards:', err)
@@ -50,7 +50,7 @@ export default function LeaderboardModal({ passkey, onClose }) {
     setError(null)
 
     try {
-      await createLeaderboard(passkey, newName.trim())
+      await createLeaderboard(userId, newName.trim())
       await loadLeaderboards()
       setActiveTab('list')
       setNewName('')
@@ -71,7 +71,7 @@ export default function LeaderboardModal({ passkey, onClose }) {
     setError(null)
 
     try {
-      await joinLeaderboard(passkey, inviteCode.trim())
+      await joinLeaderboard(userId, inviteCode.trim())
       await loadLeaderboards()
       setActiveTab('list')
       setInviteCode('')

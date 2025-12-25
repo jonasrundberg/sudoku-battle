@@ -12,14 +12,14 @@ from app.services import firestore
 router = APIRouter()
 
 
-@router.get("/user/{passkey}/stats", response_model=UserStatsResponse)
-async def get_user_stats(passkey: str):
+@router.get("/user/{user_id}/stats", response_model=UserStatsResponse)
+async def get_user_stats(user_id: str):
     """
     Get user's personal statistics.
 
     Returns stats like total completed, best times, streaks.
     """
-    stats = firestore.get_user_stats(passkey)
+    stats = firestore.get_user_stats(user_id)
 
     best_times_data = stats.get("best_times", {})
 
@@ -53,6 +53,6 @@ async def set_username(request: UsernameRequest):
     username = request.username.strip()[:20]
 
     # Update and return stats
-    firestore.update_username(request.passkey, username)
+    firestore.update_username(request.user_id, username)
 
-    return await get_user_stats(request.passkey)
+    return await get_user_stats(request.user_id)

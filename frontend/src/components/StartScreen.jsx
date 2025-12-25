@@ -8,20 +8,20 @@ import { Link } from 'react-router-dom'
 import Header from './Header'
 import { getTodayStats, getFriendsCompletions } from '../utils/api'
 
-export default function StartScreen({ passkey, onPlay, onStatsClick, onLeaderboardClick, onAccountClick }) {
+export default function StartScreen({ userId, onPlay, onStatsClick, onLeaderboardClick, onAccountClick }) {
   const [stats, setStats] = useState(null)
   const [friends, setFriends] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     loadData()
-  }, [passkey])
+  }, [userId])
 
   const loadData = async () => {
     try {
       const [statsData, friendsData] = await Promise.all([
         getTodayStats(),
-        passkey ? getFriendsCompletions(passkey) : { friends: [] }
+        userId ? getFriendsCompletions(userId) : { friends: [] }
       ])
       setStats(statsData)
       setFriends(friendsData.friends || [])
@@ -42,7 +42,7 @@ export default function StartScreen({ passkey, onPlay, onStatsClick, onLeaderboa
     return (
       <div className="min-h-screen flex flex-col">
         <Header
-          passkey={passkey}
+          userId={userId}
           onStatsClick={onStatsClick}
           onLeaderboardClick={onLeaderboardClick}
           onAccountClick={onAccountClick}
@@ -57,7 +57,7 @@ export default function StartScreen({ passkey, onPlay, onStatsClick, onLeaderboa
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Header
-        passkey={passkey}
+        userId={userId}
         onStatsClick={onStatsClick}
         onLeaderboardClick={onLeaderboardClick}
         onAccountClick={onAccountClick}
@@ -99,8 +99,8 @@ export default function StartScreen({ passkey, onPlay, onStatsClick, onLeaderboa
               <div className="space-y-2">
                 {friends.map((friend) => (
                   <Link
-                    key={friend.passkey}
-                    to={`/replay/${friend.passkey}`}
+                    key={friend.user_id}
+                    to={`/replay/${friend.user_id}`}
                     className="w-full flex items-center justify-between py-2 px-3 bg-green-50 rounded-lg hover:bg-green-100 active:bg-green-200 transition-colors cursor-pointer"
                   >
                     <span className="font-medium text-gray-800 flex items-center gap-2">

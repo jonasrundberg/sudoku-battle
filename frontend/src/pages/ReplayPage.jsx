@@ -1,6 +1,6 @@
 /**
  * Page for watching a replay of a friend's completed game.
- * Accessible via URL: /replay/:targetPasskey or /replay/:targetPasskey/:date
+ * Accessible via URL: /replay/:targetUserId or /replay/:targetUserId/:date
  * Plays back each move in real-time with timer and visual feedback.
  */
 
@@ -8,11 +8,11 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import SudokuGrid from '../components/SudokuGrid'
 import { getReplay } from '../utils/api'
-import { usePasskey } from '../hooks/usePasskey'
+import { useUserId } from '../hooks/useUserId'
 
 export default function ReplayPage() {
-  const { targetPasskey, date: dateParam } = useParams()
-  const { passkey } = usePasskey()
+  const { targetUserId, date: dateParam } = useParams()
+  const { userId } = useUserId()
   
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -33,16 +33,16 @@ export default function ReplayPage() {
 
   // Load replay data
   useEffect(() => {
-    if (targetPasskey) {
+    if (targetUserId) {
       loadReplay()
     }
-  }, [targetPasskey, dateParam, passkey])
+  }, [targetUserId, dateParam, userId])
 
   const loadReplay = async () => {
     try {
       setLoading(true)
       setError(null)
-      const data = await getReplay(targetPasskey, passkey, dateParam)
+      const data = await getReplay(targetUserId, userId, dateParam)
       setReplayData(data)
       // Initialize board with puzzle
       setBoard(data.puzzle.map(row => [...row]))
@@ -411,7 +411,7 @@ export default function ReplayPage() {
           <button
             type="button"
             onClick={() => {
-              const url = `${window.location.origin}/replay/${targetPasskey}/${replayData.date}`
+              const url = `${window.location.origin}/replay/${targetUserId}/${replayData.date}`
               navigator.clipboard.writeText(url)
               alert('Link copied to clipboard!')
             }}

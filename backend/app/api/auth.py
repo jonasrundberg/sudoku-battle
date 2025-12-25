@@ -36,13 +36,13 @@ CHALLENGE_EXPIRY_SECONDS = 300  # 5 minutes
 
 class RegisterStartRequest(BaseModel):
     """Request to start passkey registration."""
-    passkey: str  # Current anonymous passkey (UUID)
+    user_id: str  # Current anonymous user ID (UUID)
     username: Optional[str] = None  # Display name for the credential (optional)
 
 
 class RegisterFinishRequest(BaseModel):
     """Request to complete passkey registration."""
-    passkey: str
+    user_id: str
     credential: dict  # The credential response from browser
 
 
@@ -58,7 +58,7 @@ class LoginFinishRequest(BaseModel):
 
 class AuthResponse(BaseModel):
     """Response after successful auth."""
-    passkey: str
+    user_id: str
     username: Optional[str]
     message: str
 
@@ -70,11 +70,11 @@ async def register_start(request: RegisterStartRequest):
     Returns WebAuthn options for the browser to create a credential.
     """
     # Verify user exists
-    user = firestore.get_or_create_user(request.passkey)
-    username = request.username or user.get("username") or f"Player-{request.passkey[:6]}"
+    user = firestore.get_or_create_user(request.user_id)
+    username = request.username or user.get("username") or f"Player-{request.user_id[:6]}"
 
     # Check if user already has credentials
-    existing_creds = firestore.get_user_credentials(request.passkey)
+    existing_creds = firestore.get_user_credentials(request.user_id)
     exclude_credentials = [
         PublicKeyCredentialDescriptor(id=bytes.fromhex(cred["credential_id"]))
         for cred in existing_creds
@@ -84,7 +84,7 @@ async def register_start(request: RegisterStartRequest):
     options = generate_registration_options(
         rp_id=settings.webauthn_rp_id,
         rp_name=settings.webauthn_rp_name,
-        user_id=request.passkey.encode(),
+        user_id=request.user_id.encode(),
         user_name=username,
         user_display_name=username,
         exclude_credentials=exclude_credentials,
@@ -101,14 +101,14 @@ async def register_start(request: RegisterStartRequest):
 
     # Store challenge for verification
     firestore.store_auth_challenge(
-        request.passkey,
+        request.user_id,
         options.challenge.hex(),
         "registration",
     )
 
     # Update username if provided
     if request.username:
-        firestore.update_username(request.passkey, request.username)
+        firestore.update_username(request.user_id, request.username)
 
     return json.loads(options_to_json(options))
 
@@ -120,7 +120,7 @@ async def register_finish(request: RegisterFinishRequest):
     Verifies the credential and stores it.
     """
     # Get stored challenge
-    challenge_data = firestore.get_auth_challenge(request.passkey)
+    challenge_data = firestore.get_auth_challenge(request.user_id)
     if not challenge_data or challenge_data.get("type") != "registration":
         raise HTTPException(status_code=400, detail="No pending registration")
 
@@ -137,18 +137,18 @@ async def register_finish(request: RegisterFinishRequest):
 
         # Store the credential
         firestore.store_user_credential(
-            passkey=request.passkey,
+            user_id=request.user_id,
             credential_id=verification.credential_id.hex(),
             public_key=verification.credential_public_key.hex(),
             sign_count=verification.sign_count,
         )
 
         # Clear the challenge
-        firestore.delete_auth_challenge(request.passkey)
+        firestore.delete_auth_challenge(request.user_id)
 
-        user = firestore.get_or_create_user(request.passkey)
+        user = firestore.get_or_create_user(request.user_id)
         return AuthResponse(
-            passkey=request.passkey,
+            user_id=request.user_id,
             username=user.get("username"),
             message="Passkey registered successfully",
         )
@@ -231,7 +231,7 @@ async def login_finish(request: LoginFinishRequest):
 
         # Update sign count
         firestore.update_credential_sign_count(
-            credential_data["passkey"],
+            credential_data["user_id"],
             credential_id_hex,
             verification.new_sign_count,
         )
@@ -239,9 +239,9 @@ async def login_finish(request: LoginFinishRequest):
         # Clear the challenge
         firestore.delete_auth_challenge(session_id)
 
-        user = firestore.get_or_create_user(credential_data["passkey"])
+        user = firestore.get_or_create_user(credential_data["user_id"])
         return AuthResponse(
-            passkey=credential_data["passkey"],
+            user_id=credential_data["user_id"],
             username=user.get("username"),
             message="Login successful",
         )
@@ -250,10 +250,10 @@ async def login_finish(request: LoginFinishRequest):
         raise HTTPException(status_code=400, detail=f"Login failed: {str(e)}")
 
 
-@router.get("/auth/check/{passkey}")
-async def check_passkey_registered(passkey: str):
-    """Check if a passkey has any registered credentials."""
-    credentials = firestore.get_user_credentials(passkey)
+@router.get("/auth/check/{user_id}")
+async def check_passkey_registered(user_id: str):
+    """Check if a user has any registered credentials."""
+    credentials = firestore.get_user_credentials(user_id)
     return {
         "has_passkey": len(credentials) > 0,
         "credential_count": len(credentials),

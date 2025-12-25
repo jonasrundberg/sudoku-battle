@@ -9,13 +9,13 @@ import CompletionModal from './components/CompletionModal'
 import GameOverModal from './components/GameOverModal'
 import AccountModal from './components/AccountModal'
 import StartScreen from './components/StartScreen'
-import { usePasskey } from './hooks/usePasskey'
+import { useUserId } from './hooks/useUserId'
 import { useSudoku } from './hooks/useSudoku'
 import { useTimer } from './hooks/useTimer'
 import { getProgress } from './utils/api'
 
 function App() {
-  const { passkey, isLoading: passkeyLoading, updatePasskey } = usePasskey()
+  const { userId, isLoading: userIdLoading, updateUserId } = useUserId()
   const {
     puzzle,
     board,
@@ -37,7 +37,7 @@ function App() {
     saveProgress,
     verifyAndComplete,
     moveHistory,
-  } = useSudoku(passkey)
+  } = useSudoku(userId)
 
   const {
     time,
@@ -62,11 +62,11 @@ function App() {
 
   // Check if user has progress for today before showing the game
   useEffect(() => {
-    if (!passkey || passkeyLoading) return
+    if (!userId || userIdLoading) return
 
     const checkTodayProgress = async () => {
       try {
-        const progress = await getProgress(passkey)
+        const progress = await getProgress(userId)
         if (progress && progress.date) {
           // User has progress for today - go straight to game
           setShowStartScreen(false)
@@ -82,11 +82,11 @@ function App() {
       }
     }
     checkTodayProgress()
-  }, [passkey, passkeyLoading])
+  }, [userId, userIdLoading])
 
   // Load puzzle and progress when game starts (after clicking Play or if user has existing progress)
   useEffect(() => {
-    if (passkey && !passkeyLoading && showStartScreen === false) {
+    if (userId && !userIdLoading && showStartScreen === false) {
       loadPuzzle().then(() => {
         loadProgress().then((progress) => {
           if (progress) {
@@ -103,18 +103,18 @@ function App() {
         })
       })
     }
-  }, [passkey, passkeyLoading, showStartScreen])
+  }, [userId, userIdLoading, showStartScreen])
 
   // Auto-save progress periodically
   useEffect(() => {
-    if (!passkey || isCompleted || isFailed) return
+    if (!userId || isCompleted || isFailed) return
 
     const interval = setInterval(() => {
       saveProgress(board, time, isPaused, mistakes, moveHistory)
     }, 30000) // Save every 30 seconds
 
     return () => clearInterval(interval)
-  }, [passkey, board, time, isPaused, isCompleted, isFailed, mistakes, moveHistory])
+  }, [userId, board, time, isPaused, isCompleted, isFailed, mistakes, moveHistory])
 
   // Handle pause/resume
   const handlePauseToggle = useCallback(() => {
@@ -214,7 +214,7 @@ function App() {
   }, [])
 
   // Show loading while checking for existing progress
-  if (passkeyLoading || checkingProgress) {
+  if (userIdLoading || checkingProgress) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -230,7 +230,7 @@ function App() {
     return (
       <>
         <StartScreen
-          passkey={passkey}
+          userId={userId}
           onPlay={handlePlay}
           onStatsClick={() => setShowStats(true)}
           onLeaderboardClick={() => setShowLeaderboard(true)}
@@ -239,21 +239,21 @@ function App() {
         {/* Modals */}
         {showStats && (
           <StatsModal
-            passkey={passkey}
+            userId={userId}
             onClose={() => setShowStats(false)}
           />
         )}
         {showLeaderboard && (
           <LeaderboardModal
-            passkey={passkey}
+            userId={userId}
             onClose={() => setShowLeaderboard(false)}
           />
         )}
         {showAccount && (
           <AccountModal
-            passkey={passkey}
-            onPasskeyChange={(newPasskey) => {
-              updatePasskey(newPasskey)
+            userId={userId}
+            onUserIdChange={(newUserId) => {
+              updateUserId(newUserId)
               window.location.reload()
             }}
             onClose={() => setShowAccount(false)}
@@ -278,7 +278,7 @@ function App() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header
-        passkey={passkey}
+        userId={userId}
         onStatsClick={() => setShowStats(true)}
         onLeaderboardClick={() => setShowLeaderboard(true)}
         onAccountClick={() => setShowAccount(true)}
@@ -359,14 +359,14 @@ function App() {
       {/* Modals */}
       {showStats && (
         <StatsModal
-          passkey={passkey}
+          userId={userId}
           onClose={() => setShowStats(false)}
         />
       )}
 
       {showLeaderboard && (
         <LeaderboardModal
-          passkey={passkey}
+          userId={userId}
           onClose={() => setShowLeaderboard(false)}
         />
       )}
@@ -388,10 +388,10 @@ function App() {
 
       {showAccount && (
         <AccountModal
-          passkey={passkey}
-          onPasskeyChange={(newPasskey) => {
-            updatePasskey(newPasskey)
-            // Reload the page to fetch data for the new passkey
+          userId={userId}
+          onUserIdChange={(newUserId) => {
+            updateUserId(newUserId)
+            // Reload the page to fetch data for the new user
             window.location.reload()
           }}
           onClose={() => setShowAccount(false)}

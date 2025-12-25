@@ -16,14 +16,14 @@ from app.services.puzzle_generator import verify_solution, generate_puzzle
 router = APIRouter()
 
 
-@router.get("/progress/{passkey}", response_model=ProgressResponse | None)
-async def get_progress(passkey: str):
+@router.get("/progress/{user_id}", response_model=ProgressResponse | None)
+async def get_progress(user_id: str):
     """
     Get user's progress on today's puzzle.
 
     Returns None if no progress exists.
     """
-    progress = firestore.get_progress(passkey, date.today())
+    progress = firestore.get_progress(user_id, date.today())
 
     if not progress:
         return None
@@ -52,7 +52,7 @@ async def save_progress(request: ProgressRequest):
         raise HTTPException(status_code=400, detail="Invalid board dimensions")
 
     # Ensure user exists
-    firestore.get_or_create_user(request.passkey)
+    firestore.get_or_create_user(request.user_id)
 
     # Check if failed (3 mistakes)
     is_failed = request.mistakes >= 3
@@ -61,7 +61,7 @@ async def save_progress(request: ProgressRequest):
     move_history = [m.model_dump() for m in request.move_history] if request.move_history else []
 
     progress = firestore.save_progress(
-        passkey=request.passkey,
+        user_id=request.user_id,
         puzzle_date=date.today(),
         board=request.board,
         time_seconds=request.time_seconds,
@@ -84,16 +84,16 @@ async def save_progress(request: ProgressRequest):
     )
 
 
-@router.get("/replay/{target_passkey}")
+@router.get("/replay/{target_user_id}")
 async def get_replay(
-    target_passkey: str,
-    passkey: str | None = None,
+    target_user_id: str,
+    user_id: str | None = None,
     replay_date: str | None = Query(None, alias="date")
 ):
     """
     Get replay data for a completed game.
 
-    - If passkey is provided, verifies the user shares a leaderboard with target
+    - If user_id is provided, verifies the user shares a leaderboard with target
     - If date is provided, gets replay for that specific date
     - Replays are only available for completed or failed games
     """
@@ -106,21 +106,21 @@ async def get_replay(
     else:
         puzzle_date = date.today()
 
-    # If passkey provided, verify friendship (optional - allows public replay links)
-    if passkey:
-        friends = firestore.get_friends_completions_today(passkey)
-        friend_passkeys = [f["passkey"] for f in friends]
+    # If user_id provided, verify friendship (optional - allows public replay links)
+    if user_id:
+        friends = firestore.get_friends_completions_today(user_id)
+        friend_user_ids = [f["user_id"] for f in friends]
         # Only check friendship for today's puzzles
-        if puzzle_date == date.today() and target_passkey not in friend_passkeys:
+        if puzzle_date == date.today() and target_user_id not in friend_user_ids:
             # Allow if it's the user's own replay
-            if target_passkey != passkey:
+            if target_user_id != user_id:
                 raise HTTPException(
                     status_code=403,
                     detail="You can only watch replays of friends who share a leaderboard with you"
                 )
 
     # Get replay data
-    replay_data = firestore.get_replay_data(target_passkey, puzzle_date)
+    replay_data = firestore.get_replay_data(target_user_id, puzzle_date)
 
     if not replay_data:
         raise HTTPException(status_code=404, detail="No replay data found")
@@ -141,7 +141,7 @@ async def get_replay(
     ]
 
     return ReplayResponse(
-        passkey=replay_data["passkey"],
+        user_id=replay_data["user_id"],
         username=replay_data["username"],
         date=replay_data["date"],
         difficulty=puzzle_data["difficulty"],
@@ -165,7 +165,7 @@ async def verify_puzzle(request: VerifyRequest):
         raise HTTPException(status_code=400, detail="Invalid board dimensions")
 
     # Check if already completed
-    existing_progress = firestore.get_progress(request.passkey, date.today())
+    existing_progress = firestore.get_progress(request.user_id, date.today())
     if existing_progress and existing_progress.get("is_completed"):
         return VerifyResponse(
             is_correct=True,
@@ -183,15 +183,7 @@ async def verify_puzzle(request: VerifyRequest):
 
         # Mark as completed and update stats
         firestore.mark_completed(
-            passkey=request.passkey,
-            puzzle_date=today,
-            time_seconds=request.time_seconds,
-            difficulty=difficulty,
-        )
-
-        # Record to all leaderboards user is a member of
-        firestore.record_completion_to_leaderboards(
-            passkey=request.passkey,
+            user_id=request.user_id,
             puzzle_date=today,
             time_seconds=request.time_seconds,
             difficulty=difficulty,

@@ -37,21 +37,21 @@ export async function getTodayStats() {
   return apiRequest('/puzzle/today/stats')
 }
 
-export async function getFriendsCompletions(passkey) {
-  return apiRequest(`/puzzle/today/friends?passkey=${passkey}`)
+export async function getFriendsCompletions(userId) {
+  return apiRequest(`/puzzle/today/friends?user_id=${userId}`)
 }
 
 // ============ Progress ============
 
-export async function getProgress(passkey) {
-  return apiRequest(`/progress/${passkey}`)
+export async function getProgress(userId) {
+  return apiRequest(`/progress/${userId}`)
 }
 
-export async function saveProgress(passkey, board, timeSeconds, isPaused = false, mistakes = 0, moveHistory = []) {
+export async function saveProgress(userId, board, timeSeconds, isPaused = false, mistakes = 0, moveHistory = []) {
   return apiRequest('/progress', {
     method: 'POST',
     body: JSON.stringify({
-      passkey,
+      user_id: userId,
       board,
       time_seconds: timeSeconds,
       is_paused: isPaused,
@@ -61,11 +61,11 @@ export async function saveProgress(passkey, board, timeSeconds, isPaused = false
   })
 }
 
-export async function verifySolution(passkey, board, timeSeconds) {
+export async function verifySolution(userId, board, timeSeconds) {
   return apiRequest('/verify', {
     method: 'POST',
     body: JSON.stringify({
-      passkey,
+      user_id: userId,
       board,
       time_seconds: timeSeconds,
     }),
@@ -74,10 +74,10 @@ export async function verifySolution(passkey, board, timeSeconds) {
 
 // ============ Replay ============
 
-export async function getReplay(targetPasskey, passkey, date = null) {
-  let url = `/replay/${targetPasskey}`
+export async function getReplay(targetUserId, userId, date = null) {
+  let url = `/replay/${targetUserId}`
   const params = []
-  if (passkey) params.push(`passkey=${passkey}`)
+  if (userId) params.push(`user_id=${userId}`)
   if (date) params.push(`date=${date}`)
   if (params.length > 0) url += `?${params.join('&')}`
   return apiRequest(url)
@@ -85,15 +85,15 @@ export async function getReplay(targetPasskey, passkey, date = null) {
 
 // ============ User ============
 
-export async function getUserStats(passkey) {
-  return apiRequest(`/user/${passkey}/stats`)
+export async function getUserStats(userId) {
+  return apiRequest(`/user/${userId}/stats`)
 }
 
-export async function setUsername(passkey, username) {
+export async function setUsername(userId, username) {
   return apiRequest('/user/username', {
     method: 'PUT',
     body: JSON.stringify({
-      passkey,
+      user_id: userId,
       username,
     }),
   })
@@ -101,25 +101,25 @@ export async function setUsername(passkey, username) {
 
 // ============ Leaderboard ============
 
-export async function getUserLeaderboards(passkey) {
-  return apiRequest(`/leaderboards/${passkey}`)
+export async function getUserLeaderboards(userId) {
+  return apiRequest(`/leaderboards/${userId}`)
 }
 
-export async function createLeaderboard(passkey, name) {
+export async function createLeaderboard(userId, name) {
   return apiRequest('/leaderboard', {
     method: 'POST',
     body: JSON.stringify({
-      passkey,
+      user_id: userId,
       name,
     }),
   })
 }
 
-export async function joinLeaderboard(passkey, inviteCode) {
+export async function joinLeaderboard(userId, inviteCode) {
   return apiRequest('/leaderboard/join', {
     method: 'POST',
     body: JSON.stringify({
-      passkey,
+      user_id: userId,
       invite_code: inviteCode,
     }),
   })
@@ -139,17 +139,17 @@ export async function getGlobalLeaderboard() {
 
 // ============ Auth/Passkey ============
 
-export async function startPasskeyRegistration(passkey, username) {
+export async function startPasskeyRegistration(userId, username) {
   return apiRequest('/auth/register/start', {
     method: 'POST',
-    body: JSON.stringify({ passkey, username }),
+    body: JSON.stringify({ user_id: userId, username }),
   })
 }
 
-export async function finishPasskeyRegistration(passkey, credential) {
+export async function finishPasskeyRegistration(userId, credential) {
   return apiRequest('/auth/register/finish', {
     method: 'POST',
-    body: JSON.stringify({ passkey, credential }),
+    body: JSON.stringify({ user_id: userId, credential }),
   })
 }
 
@@ -167,6 +167,6 @@ export async function finishPasskeyLogin(credential) {
   })
 }
 
-export async function checkPasskeyRegistered(passkey) {
-  return apiRequest(`/auth/check/${passkey}`)
+export async function checkPasskeyRegistered(userId) {
+  return apiRequest(`/auth/check/${userId}`)
 }

@@ -5,12 +5,12 @@
 import { useState, useEffect } from 'react'
 import { getUserStats } from '../utils/api'
 
-export default function StatsModal({ passkey, onClose }) {
+export default function StatsModal({ userId, onClose }) {
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    getUserStats(passkey)
+    getUserStats(userId)
       .then((data) => {
         setStats(data)
         setLoading(false)
@@ -19,7 +19,7 @@ export default function StatsModal({ passkey, onClose }) {
         console.error('Failed to load stats:', err)
         setLoading(false)
       })
-  }, [passkey])
+  }, [userId])
 
   const formatTime = (seconds) => {
     if (seconds === null || seconds === undefined) return '--:--'

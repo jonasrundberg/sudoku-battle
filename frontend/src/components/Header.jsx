@@ -2,7 +2,7 @@
  * App header with title, user info, and navigation.
  */
 
-export default function Header({ passkey, onStatsClick, onLeaderboardClick, onAccountClick }) {
+export default function Header({ userId, onStatsClick, onLeaderboardClick, onAccountClick }) {
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
       <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">

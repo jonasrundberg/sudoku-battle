@@ -251,7 +251,8 @@ def save_progress(
     is_paused: bool = False,
     is_completed: bool = False,
     mistakes: int = 0,
-    is_failed: bool = False
+    is_failed: bool = False,
+    move_history: list[dict] = None
 ) -> dict:
     """Save user's progress on a puzzle."""
     db = get_firestore_client()
@@ -272,6 +273,10 @@ def save_progress(
         "is_failed": is_failed,
         "updated_at": datetime.utcnow(),
     }
+
+    # Store move history for replay functionality
+    if move_history is not None:
+        data["move_history"] = move_history
 
     if is_completed:
         data["completed_at"] = datetime.utcnow()
@@ -305,6 +310,34 @@ def mark_completed(
 
     # Update user stats
     update_user_stats_on_completion(passkey, time_seconds, difficulty, puzzle_date)
+
+
+def get_replay_data(passkey: str, puzzle_date: date) -> Optional[dict]:
+    """
+    Get replay data for a user's completed game.
+
+    Returns move history and game metadata for playback.
+    """
+    progress = get_progress(passkey, puzzle_date)
+
+    if not progress:
+        return None
+
+    # Only allow replay of completed or failed games
+    if not progress.get("is_completed") and not progress.get("is_failed"):
+        return None
+
+    user = get_or_create_user(passkey)
+
+    return {
+        "passkey": passkey,
+        "username": user.get("username") or f"Player-{passkey[:6]}",
+        "date": progress.get("date"),
+        "time_seconds": progress.get("time_seconds", 0),
+        "move_history": progress.get("move_history", []),
+        "is_completed": progress.get("is_completed", False),
+        "is_failed": progress.get("is_failed", False),
+    }
 
 
 # ============ Leaderboard Operations ============

@@ -1,11 +1,12 @@
 """Progress and verification API endpoints."""
 
 from datetime import date
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
 from app.models.schemas import (
     ProgressRequest,
     ProgressResponse,
+    ReplayResponse,
     VerifyRequest,
     VerifyResponse,
 )
@@ -35,6 +36,7 @@ async def get_progress(passkey: str):
         is_paused=progress.get("is_paused", False),
         mistakes=progress.get("mistakes", 0),
         is_failed=progress.get("is_failed", False),
+        move_history=progress.get("move_history", []),
     )
 
 
@@ -55,6 +57,9 @@ async def save_progress(request: ProgressRequest):
     # Check if failed (3 mistakes)
     is_failed = request.mistakes >= 3
 
+    # Convert move_history to list of dicts for Firestore
+    move_history = [m.model_dump() for m in request.move_history] if request.move_history else []
+
     progress = firestore.save_progress(
         passkey=request.passkey,
         puzzle_date=date.today(),
@@ -64,6 +69,7 @@ async def save_progress(request: ProgressRequest):
         is_completed=False,
         mistakes=request.mistakes,
         is_failed=is_failed,
+        move_history=move_history,
     )
 
     return ProgressResponse(
@@ -74,6 +80,64 @@ async def save_progress(request: ProgressRequest):
         is_paused=progress["is_paused"],
         mistakes=progress.get("mistakes", 0),
         is_failed=progress.get("is_failed", False),
+        move_history=progress.get("move_history", []),
+    )
+
+
+@router.get("/replay/{target_passkey}")
+async def get_replay(
+    target_passkey: str,
+    passkey: str | None = None,
+    replay_date: str | None = Query(None, alias="date")
+):
+    """
+    Get replay data for a completed game.
+
+    - If passkey is provided, verifies the user shares a leaderboard with target
+    - If date is provided, gets replay for that specific date
+    - Replays are only available for completed or failed games
+    """
+    # Determine which date to use
+    if replay_date:
+        try:
+            puzzle_date = date.fromisoformat(replay_date)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+    else:
+        puzzle_date = date.today()
+
+    # If passkey provided, verify friendship (optional - allows public replay links)
+    if passkey:
+        friends = firestore.get_friends_completions_today(passkey)
+        friend_passkeys = [f["passkey"] for f in friends]
+        # Only check friendship for today's puzzles
+        if puzzle_date == date.today() and target_passkey not in friend_passkeys:
+            # Allow if it's the user's own replay
+            if target_passkey != passkey:
+                raise HTTPException(
+                    status_code=403,
+                    detail="You can only watch replays of friends who share a leaderboard with you"
+                )
+
+    # Get replay data
+    replay_data = firestore.get_replay_data(target_passkey, puzzle_date)
+
+    if not replay_data:
+        raise HTTPException(status_code=404, detail="No replay data found")
+
+    # Get puzzle for the replay date
+    puzzle_data = generate_puzzle(puzzle_date)
+
+    return ReplayResponse(
+        passkey=replay_data["passkey"],
+        username=replay_data["username"],
+        date=replay_data["date"],
+        difficulty=puzzle_data["difficulty"],
+        puzzle=puzzle_data["puzzle"],
+        time_seconds=replay_data["time_seconds"],
+        move_history=replay_data["move_history"],
+        is_completed=replay_data["is_completed"],
+        is_failed=replay_data.get("is_failed", False),
     )
 
 

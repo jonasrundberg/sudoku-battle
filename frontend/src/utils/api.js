@@ -47,7 +47,7 @@ export async function getProgress(passkey) {
   return apiRequest(`/progress/${passkey}`)
 }
 
-export async function saveProgress(passkey, board, timeSeconds, isPaused = false, mistakes = 0) {
+export async function saveProgress(passkey, board, timeSeconds, isPaused = false, mistakes = 0, moveHistory = []) {
   return apiRequest('/progress', {
     method: 'POST',
     body: JSON.stringify({
@@ -56,6 +56,7 @@ export async function saveProgress(passkey, board, timeSeconds, isPaused = false
       time_seconds: timeSeconds,
       is_paused: isPaused,
       mistakes,
+      move_history: moveHistory,
     }),
   })
 }
@@ -69,6 +70,17 @@ export async function verifySolution(passkey, board, timeSeconds) {
       time_seconds: timeSeconds,
     }),
   })
+}
+
+// ============ Replay ============
+
+export async function getReplay(targetPasskey, passkey, date = null) {
+  let url = `/replay/${targetPasskey}`
+  const params = []
+  if (passkey) params.push(`passkey=${passkey}`)
+  if (date) params.push(`date=${date}`)
+  if (params.length > 0) url += `?${params.join('&')}`
+  return apiRequest(url)
 }
 
 // ============ User ============

@@ -5,6 +5,17 @@ from typing import Optional
 from datetime import datetime
 
 
+# ============ Move History (for replay) ============
+
+class MoveRecord(BaseModel):
+    """A single move in the game, for replay functionality."""
+    row: int = Field(..., ge=0, le=8, description="Row index (0-8)")
+    col: int = Field(..., ge=0, le=8, description="Column index (0-8)")
+    value: int = Field(..., ge=0, le=9, description="Value entered (0 = erase)")
+    time_ms: int = Field(..., ge=0, description="Milliseconds since game start")
+    is_correct: bool = Field(..., description="Whether this move was correct")
+
+
 # ============ Puzzle ============
 
 class PuzzleResponse(BaseModel):
@@ -25,6 +36,7 @@ class ProgressRequest(BaseModel):
     time_seconds: int = Field(..., ge=0, description="Time spent in seconds")
     is_paused: bool = Field(default=False, description="Whether the game is paused")
     mistakes: int = Field(default=0, ge=0, le=3, description="Number of mistakes made")
+    move_history: list[MoveRecord] = Field(default_factory=list, description="History of all moves for replay")
 
 
 class ProgressResponse(BaseModel):
@@ -35,6 +47,20 @@ class ProgressResponse(BaseModel):
     is_completed: bool
     is_paused: bool
     mistakes: int = 0
+    is_failed: bool = False
+    move_history: list[MoveRecord] = Field(default_factory=list, description="History of all moves for replay")
+
+
+class ReplayResponse(BaseModel):
+    """Response containing replay data for a friend's completed game."""
+    passkey: str
+    username: str
+    date: str
+    difficulty: str
+    puzzle: list[list[int]] = Field(..., description="Original puzzle (0 = empty)")
+    time_seconds: int
+    move_history: list[MoveRecord]
+    is_completed: bool
     is_failed: bool = False
 
 

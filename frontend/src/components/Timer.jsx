@@ -12,7 +12,7 @@ export default function Timer({ time, isPaused, isCompleted, isFailed, onPauseTo
   }
 
   return (
-    <div className="flex items-center justify-between w-full max-w-md mb-2 px-1">
+    <div className="flex items-center justify-between w-full max-w-md mb-1 px-1">
       <div className="timer text-gray-800">
         {formatTime(time)}
       </div>

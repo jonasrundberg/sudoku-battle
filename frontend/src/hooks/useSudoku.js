@@ -3,7 +3,7 @@
  * Handles loading puzzle, tracking board state, conflicts, mistakes, and completion.
  */
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { getTodayPuzzle, getProgress, saveProgress, verifySolution } from '../utils/api'
 import { findConflicts } from '../utils/validation'
 
@@ -29,6 +29,10 @@ export function useSudoku(passkey) {
   const [wrongCells, setWrongCells] = useState(new Set()) // Track cells with wrong values
   const [selectedCell, setSelectedCell] = useState(null)
 
+  // Move history for replay functionality
+  const [moveHistory, setMoveHistory] = useState([])
+  const gameStartTime = useRef(null)
+
   // Load today's puzzle from server
   const loadPuzzle = useCallback(async () => {
     try {
@@ -40,6 +44,8 @@ export function useSudoku(passkey) {
       setDifficulty(data.difficulty)
       setDate(data.date)
       setDayOfWeek(data.day_of_week)
+      setMoveHistory([]) // Reset move history for new game
+      gameStartTime.current = Date.now() // Mark game start
       return data
     } catch (error) {
       console.error('Failed to load puzzle:', error)
@@ -55,6 +61,13 @@ export function useSudoku(passkey) {
       const progress = await getProgress(passkey)
       
       if (progress) {
+        // Restore move history if available
+        if (progress.move_history) {
+          setMoveHistory(progress.move_history)
+        }
+        // Calculate game start time based on saved time
+        gameStartTime.current = Date.now() - (progress.time_seconds * 1000)
+        
         if (progress.is_failed) {
           setIsFailed(true)
           setMistakes(progress.mistakes || MAX_MISTAKES)
@@ -76,15 +89,15 @@ export function useSudoku(passkey) {
   }, [passkey])
 
   // Save progress to server
-  const saveProgressToServer = useCallback(async (currentBoard, timeSeconds, isPaused = false, currentMistakes = 0) => {
+  const saveProgressToServer = useCallback(async (currentBoard, timeSeconds, isPaused = false, currentMistakes = 0, currentMoveHistory = null) => {
     if (!passkey || isCompleted || isFailed) return
 
     try {
-      await saveProgress(passkey, currentBoard, timeSeconds, isPaused, currentMistakes)
+      await saveProgress(passkey, currentBoard, timeSeconds, isPaused, currentMistakes, currentMoveHistory || moveHistory)
     } catch (error) {
       console.error('Failed to save progress:', error)
     }
-  }, [passkey, isCompleted, isFailed])
+  }, [passkey, isCompleted, isFailed, moveHistory])
 
   // Handle cell input - returns true if correct, false if wrong
   const handleCellInput = useCallback((row, col, value) => {
@@ -97,6 +110,16 @@ export function useSudoku(passkey) {
     const cellKey = `${row},${col}`
     
     if (!isCorrect) {
+      // Record move for replay
+      const timeMs = gameStartTime.current ? Date.now() - gameStartTime.current : 0
+      setMoveHistory(prev => [...prev, {
+        row,
+        col,
+        value,
+        time_ms: timeMs,
+        is_correct: false,
+      }])
+      
       // Wrong answer - increment mistakes and place the wrong number
       const newMistakes = mistakes + 1
       setMistakes(newMistakes)
@@ -123,6 +146,16 @@ export function useSudoku(passkey) {
     }
 
     // Correct answer - update board and remove from wrong cells if it was there
+    // Record move for replay
+    const timeMs = gameStartTime.current ? Date.now() - gameStartTime.current : 0
+    setMoveHistory(prev => [...prev, {
+      row,
+      col,
+      value,
+      time_ms: timeMs,
+      is_correct: true,
+    }])
+    
     setBoard(prevBoard => {
       const newBoard = prevBoard.map(r => [...r])
       newBoard[row][col] = value
@@ -151,6 +184,16 @@ export function useSudoku(passkey) {
     if (isCompleted || isFailed) return
 
     const cellKey = `${row},${col}`
+    
+    // Record erase for replay (value 0 = erase)
+    const timeMs = gameStartTime.current ? Date.now() - gameStartTime.current : 0
+    setMoveHistory(prev => [...prev, {
+      row,
+      col,
+      value: 0,
+      time_ms: timeMs,
+      is_correct: true, // Erase is always valid
+    }])
     
     setBoard(prevBoard => {
       const newBoard = prevBoard.map(r => [...r])
@@ -207,6 +250,7 @@ export function useSudoku(passkey) {
     wrongCells,
     selectedCell,
     setSelectedCell,
+    moveHistory,
     
     // Actions
     handleCellInput,

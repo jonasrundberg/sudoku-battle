@@ -36,6 +36,7 @@ function App() {
     loadProgress,
     saveProgress,
     verifyAndComplete,
+    moveHistory,
   } = useSudoku(passkey)
 
   const {
@@ -109,11 +110,11 @@ function App() {
     if (!passkey || isCompleted || isFailed) return
 
     const interval = setInterval(() => {
-      saveProgress(board, time, isPaused, mistakes)
+      saveProgress(board, time, isPaused, mistakes, moveHistory)
     }, 30000) // Save every 30 seconds
 
     return () => clearInterval(interval)
-  }, [passkey, board, time, isPaused, isCompleted, isFailed, mistakes])
+  }, [passkey, board, time, isPaused, isCompleted, isFailed, mistakes, moveHistory])
 
   // Handle pause/resume
   const handlePauseToggle = useCallback(() => {
@@ -121,9 +122,9 @@ function App() {
       resume()
     } else {
       pause()
-      saveProgress(board, time, true, mistakes)
+      saveProgress(board, time, true, mistakes, moveHistory)
     }
-  }, [isPaused, pause, resume, board, time, saveProgress, mistakes])
+  }, [isPaused, pause, resume, board, time, saveProgress, mistakes, moveHistory])
 
   // Handle number input
   const handleNumberInput = useCallback((num) => {
@@ -139,11 +140,11 @@ function App() {
         if (result.gameOver) {
           pause()
           // Save failed state to server
-          saveProgress(board, time, false, maxMistakes)
+          saveProgress(board, time, false, maxMistakes, moveHistory)
           setShowGameOver(true)
         } else {
           // Save progress with updated mistakes
-          saveProgress(board, time, false, mistakes + 1)
+          saveProgress(board, time, false, mistakes + 1, moveHistory)
         }
       }
     }
@@ -283,7 +284,7 @@ function App() {
         onAccountClick={() => setShowAccount(true)}
       />
 
-      <main className="flex-1 flex flex-col items-center justify-center p-2 pt-0 max-w-lg mx-auto w-full">
+      <main className="flex-1 flex flex-col items-center p-2 pt-1 max-w-lg mx-auto w-full">
         {/* Timer with difficulty and lives */}
         <Timer
           time={time}

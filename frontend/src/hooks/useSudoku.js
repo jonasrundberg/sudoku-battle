@@ -91,6 +91,8 @@ export function useSudoku(userId) {
   // Save progress to server
   const saveProgressToServer = useCallback(async (currentBoard, timeSeconds, isPaused = false, currentMistakes = 0, currentMoveHistory = null) => {
     if (!userId || isCompleted || isFailed) return
+    // Don't save if board is not loaded yet
+    if (!currentBoard || currentBoard.length !== 9) return
 
     try {
       await saveProgress(userId, currentBoard, timeSeconds, isPaused, currentMistakes, currentMoveHistory || moveHistory)

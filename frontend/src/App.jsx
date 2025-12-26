@@ -113,14 +113,14 @@ function App() {
 
   // Auto-save progress periodically
   useEffect(() => {
-    if (!userId || isCompleted || isFailed) return
+    if (!userId || isCompleted || isFailed || showStartScreen) return
 
     const interval = setInterval(() => {
       saveProgress(board, time, isPaused, mistakes, moveHistory)
     }, 30000) // Save every 30 seconds
 
     return () => clearInterval(interval)
-  }, [userId, board, time, isPaused, isCompleted, isFailed, mistakes, moveHistory])
+  }, [userId, board, time, isPaused, isCompleted, isFailed, mistakes, moveHistory, showStartScreen])
 
   // Handle pause/resume
   const handlePauseToggle = useCallback(() => {

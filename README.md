@@ -13,7 +13,7 @@ A daily sudoku challenge where everyone gets the same puzzle. Compete with frien
 
 ## Features
 
-- 🧩 **Daily puzzle** — Same puzzle for everyone, difficulty rotates by day of week
+- 🧩 **Daily puzzle** — Same puzzle for everyone, random difficulty each day
 - ⭐ **3 lives system** — Lose a star for each mistake
 - 🏆 **Private leaderboards** — Create groups with invite codes (like Advent of Code)
 - 👥 **Friends feed** — See who completed today's puzzle on the start screen
@@ -22,17 +22,14 @@ A daily sudoku challenge where everyone gets the same puzzle. Compete with frien
 - ⏱️ **Timer with pause** — Track your solving time
 - 💾 **Auto-save** — Progress saved automatically
 
-## Difficulty Schedule
+## Difficulty Levels
 
-| Day       | Difficulty |
-| --------- | ---------- |
-| Monday    | Easy       |
-| Tuesday   | Medium     |
-| Wednesday | Hard       |
-| Thursday  | Easy       |
-| Friday    | Medium     |
-| Saturday  | Hard       |
-| Sunday    | Expert     |
+Each day's difficulty is randomly selected using the date as a seed, so everyone gets the same difficulty:
+- **Easy** — 40% empty cells
+- **Medium** — 50% empty cells
+- **Hard** — 60% empty cells
+- **Expert** — 70% empty cells
+
 
 ## Tech Stack
 
@@ -71,13 +68,16 @@ npm run dev  # Runs on http://localhost:5173, proxies API to :8000
 
 ### Environment Variables
 
-| Variable                  | Description                   | Required |
-| ------------------------- | ----------------------------- | -------- |
-| `GCP_PROJECT_ID`          | Google Cloud project ID       | Yes      |
-| `ENVIRONMENT`             | `development` or `production` | No       |
-| `WEBAUTHN_RP_ID`          | Relying party ID for WebAuthn | Yes      |
-| `WEBAUTHN_ORIGIN`         | Origin URL for WebAuthn       | Yes      |
-| `FIRESTORE_EMULATOR_HOST` | Firestore emulator host       | No       |
+| Variable                  | Description                         | Default                 |
+| ------------------------- | ----------------------------------- | ----------------------- |
+| `GCP_PROJECT_ID`          | Google Cloud project ID             | (required)              |
+| `ENVIRONMENT`             | `development` or `production`       | `development`           |
+| `CORS_ORIGINS`            | Comma-separated origins (prod only) | `*` in dev              |
+| `WEBAUTHN_RP_ID`          | Relying party ID (domain)           | `localhost`             |
+| `WEBAUTHN_ORIGIN`         | Origin URL for WebAuthn             | `http://localhost:5173` |
+| `FIRESTORE_EMULATOR_HOST` | Firestore emulator host (local dev) | (optional)              |
+
+> **Note**: In production on Cloud Run, `WEBAUTHN_RP_ID` and `WEBAUTHN_ORIGIN` are auto-detected from the request headers, so you typically don't need to set them.
 
 ## Deployment
 
@@ -89,27 +89,7 @@ gcloud config set project YOUR_PROJECT_ID
 ./deploy/deploy.sh
 ```
 
-## Project Structure
 
-```
-sudoku-battle/
-├── backend/
-│   ├── app/
-│   │   ├── api/           # FastAPI endpoints
-│   │   ├── models/        # Pydantic schemas
-│   │   ├── services/      # Puzzle generation, Firestore, WebAuthn
-│   │   └── main.py        # App entry point
-│   └── requirements.txt
-├── frontend/
-│   ├── src/
-│   │   ├── components/    # React components
-│   │   ├── hooks/         # Custom hooks (passkey, sudoku, timer)
-│   │   └── utils/         # API client
-│   └── package.json
-├── deploy/
-│   └── deploy.sh
-└── Dockerfile
-```
 
 ## License
 

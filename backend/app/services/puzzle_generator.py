@@ -58,7 +58,8 @@ def generate_puzzle(puzzle_date: date) -> dict:
     Generate a sudoku puzzle for the given date.
 
     The puzzle is deterministic - same date always produces the same puzzle.
-    Difficulty is determined by the day of week.
+    Difficulty is randomly selected using the date as seed, so all users
+    get the same difficulty on the same day.
 
     Args:
         puzzle_date: The date to generate a puzzle for

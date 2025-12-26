@@ -2,9 +2,9 @@
  * Modal shown when player runs out of lives.
  */
 
-export default function GameOverModal({ mistakes, onClose }) {
+export default function GameOverModal({ mistakes, onContinue }) {
   return (
-    <div className="modal-backdrop" onClick={onClose}>
+    <div className="modal-backdrop">
       <div className="modal-content text-center" onClick={(e) => e.stopPropagation()}>
         <div className="text-6xl mb-4">💔</div>
         
@@ -18,12 +18,12 @@ export default function GameOverModal({ mistakes, onClose }) {
         
         <div className="bg-red-50 rounded-lg p-4 mb-6">
           <div className="text-4xl mb-2">
-            <span className="text-gray-300">❤️</span>
-            <span className="text-gray-300">❤️</span>
-            <span className="text-gray-300">❤️</span>
+            <span className="text-gray-300">⭐</span>
+            <span className="text-gray-300">⭐</span>
+            <span className="text-gray-300">⭐</span>
           </div>
           <div className="text-sm text-red-600 font-medium">
-            No lives remaining
+            No stars earned
           </div>
         </div>
         
@@ -33,10 +33,10 @@ export default function GameOverModal({ mistakes, onClose }) {
         
         <button
           type="button"
-          onClick={onClose}
+          onClick={onContinue}
           className="w-full py-3 bg-gray-500 text-white rounded-lg font-semibold hover:bg-gray-600 transition-colors"
         >
-          OK
+          Continue
         </button>
       </div>
     </div>

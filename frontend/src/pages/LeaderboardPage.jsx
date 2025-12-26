@@ -91,7 +91,7 @@ export default function LeaderboardPage() {
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 text-xl font-bold text-gray-800">
-            <span className="text-2xl">🧩</span>
+            <img src="/sudoku.svg" alt="" className="h-8 w-8" />
             Sudoku Battle
           </Link>
         </div>

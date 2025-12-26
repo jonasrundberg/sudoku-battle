@@ -68,8 +68,14 @@ function App() {
       try {
         const progress = await getProgress(userId)
         if (progress && progress.date) {
-          // User has progress for today - go straight to game
-          setShowStartScreen(false)
+          // User has progress for today
+          if (progress.is_completed || progress.is_failed) {
+            // Already completed or failed - show start screen with completion info
+            setShowStartScreen(true)
+          } else {
+            // In progress - go straight to game
+            setShowStartScreen(false)
+          }
         } else {
           // No progress - show start screen
           setShowStartScreen(true)
@@ -375,14 +381,22 @@ function App() {
         <CompletionModal
           time={time}
           difficulty={difficulty}
-          onClose={() => setShowCompletion(false)}
+          mistakes={mistakes}
+          userId={userId}
+          onContinue={() => {
+            setShowCompletion(false)
+            setShowStartScreen(true)
+          }}
         />
       )}
 
       {showGameOver && (
         <GameOverModal
           mistakes={mistakes}
-          onClose={() => setShowGameOver(false)}
+          onContinue={() => {
+            setShowGameOver(false)
+            setShowStartScreen(true)
+          }}
         />
       )}
 

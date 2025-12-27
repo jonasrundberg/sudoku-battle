@@ -1,15 +1,80 @@
 /**
- * Number pad for entering values 1-9 and erasing.
+ * Number pad for entering values 1-9, toggling notes mode, and erasing.
  * Touch-friendly for mobile devices.
  */
 
-export default function NumberPad({ onNumberClick, onEraseClick, disabled }) {
+export default function NumberPad({ onNumberClick, onEraseClick, disabled, notesMode, onNotesToggle, onClearAllNotes, hasNotes }) {
   const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
   return (
     <div className="mt-2 w-full max-w-md px-2">
-      {/* Erase button row */}
-      <div className="flex justify-end mb-2">
+      {/* Notes toggle and Erase button row */}
+      <div className="flex justify-end gap-2 mb-2">
+        {/* Clear all notes button - only show when there are notes */}
+        {hasNotes && (
+          <button
+            type="button"
+            onClick={onClearAllNotes}
+            disabled={disabled}
+            className={`
+              numpad-btn px-3 py-2 text-orange-500 border-orange-200 flex items-center gap-1
+              ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-orange-50'}
+            `}
+            aria-label="Clear all notes"
+          >
+            {/* Trash icon */}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+              />
+            </svg>
+            <span className="text-xs font-medium">Notes</span>
+          </button>
+        )}
+
+        {/* Notes toggle button */}
+        <button
+          type="button"
+          onClick={onNotesToggle}
+          disabled={disabled}
+          className={`
+            numpad-btn px-3 py-2 flex items-center gap-1.5 transition-all
+            text-gray-500 border-gray-200 hover:bg-gray-50
+            ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
+          `}
+          aria-label={notesMode ? 'Notes mode on' : 'Notes mode off'}
+          aria-pressed={notesMode}
+        >
+          {/* Pencil icon */}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+            />
+          </svg>
+          <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${notesMode ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600'}`}>
+            {notesMode ? 'ON' : 'OFF'}
+          </span>
+        </button>
+
+        {/* Erase button */}
         <button
           type="button"
           onClick={onEraseClick}
@@ -48,8 +113,9 @@ export default function NumberPad({ onNumberClick, onEraseClick, disabled }) {
             className={`
               numpad-btn flex-1 min-w-0 aspect-square max-w-[44px]
               ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
+              ${notesMode ? 'border-blue-300' : ''}
             `}
-            aria-label={`Enter ${num}`}
+            aria-label={notesMode ? `Toggle note ${num}` : `Enter ${num}`}
           >
             {num}
           </button>

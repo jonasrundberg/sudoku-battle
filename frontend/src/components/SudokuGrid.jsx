@@ -14,6 +14,7 @@ export default function SudokuGrid({
   onCellClick,
   mistakeCell,
   maskUserCells = false,
+  notes = {},
 }) {
   // Create a Set of conflict positions for quick lookup
   const conflictSet = new Set(
@@ -66,6 +67,7 @@ export default function SudokuGrid({
               }
               isWrong={wrongCells?.has(`${rowIndex},${colIndex}`)}
               maskValue={maskUserCells && originalBoard[rowIndex][colIndex] === 0}
+              notes={notes[`${rowIndex},${colIndex}`] || []}
               row={rowIndex}
               col={colIndex}
               onClick={handleCellClick}

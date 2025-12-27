@@ -59,6 +59,10 @@ function App() {
   const [lastMistakeCell, setLastMistakeCell] = useState(null)
   const [showStartScreen, setShowStartScreen] = useState(null) // null = checking, true = show, false = hide
   const [checkingProgress, setCheckingProgress] = useState(true)
+  
+  // Notes feature - local only, not saved to backend
+  const [notesMode, setNotesMode] = useState(false)
+  const [notes, setNotes] = useState({}) // { "row,col": [1, 3, 5], ... }
 
   // Check if user has progress for today before showing the game
   useEffect(() => {
@@ -137,9 +141,55 @@ function App() {
     }
   }, [isPaused, pause, resume, board, time, saveProgress, mistakes, moveHistory])
 
+  // Toggle note for a cell
+  const toggleNote = useCallback((row, col, num) => {
+    const key = `${row},${col}`
+    setNotes(prev => {
+      const cellNotes = prev[key] || []
+      if (cellNotes.includes(num)) {
+        // Remove the note
+        const newNotes = cellNotes.filter(n => n !== num)
+        if (newNotes.length === 0) {
+          const { [key]: _, ...rest } = prev
+          return rest
+        }
+        return { ...prev, [key]: newNotes }
+      } else {
+        // Add the note
+        return { ...prev, [key]: [...cellNotes, num].sort() }
+      }
+    })
+  }, [])
+
+  // Clear notes for a cell (when a number is placed)
+  const clearNotesForCell = useCallback((row, col) => {
+    const key = `${row},${col}`
+    setNotes(prev => {
+      const { [key]: _, ...rest } = prev
+      return rest
+    })
+  }, [])
+
   // Handle number input
   const handleNumberInput = useCallback((num) => {
     if (selectedCell && !isPaused && !isCompleted && !isFailed) {
+      // Check if cell is a given (original) cell - can't edit those
+      if (originalBoard && originalBoard[selectedCell.row][selectedCell.col] !== 0) {
+        return
+      }
+      
+      // If notes mode is on, toggle the note instead of placing a number
+      if (notesMode) {
+        // Only allow notes on empty cells
+        if (board[selectedCell.row][selectedCell.col] === 0) {
+          toggleNote(selectedCell.row, selectedCell.col, num)
+        }
+        return
+      }
+      
+      // Clear notes when placing a number
+      clearNotesForCell(selectedCell.row, selectedCell.col)
+      
       const result = handleCellInput(selectedCell.row, selectedCell.col, num)
       setVerificationError(null) // Clear error when user makes changes
       
@@ -159,14 +209,16 @@ function App() {
         }
       }
     }
-  }, [selectedCell, isPaused, isCompleted, isFailed, handleCellInput, pause, saveProgress, time])
+  }, [selectedCell, isPaused, isCompleted, isFailed, notesMode, board, originalBoard, handleCellInput, pause, saveProgress, time, toggleNote, clearNotesForCell])
 
   // Handle erase
   const handleEraseClick = useCallback(() => {
     if (selectedCell && !isPaused && !isCompleted && !isFailed) {
+      // Also clear notes when erasing
+      clearNotesForCell(selectedCell.row, selectedCell.col)
       handleErase(selectedCell.row, selectedCell.col)
     }
-  }, [selectedCell, isPaused, isCompleted, isFailed, handleErase])
+  }, [selectedCell, isPaused, isCompleted, isFailed, handleErase, clearNotesForCell])
 
   // Check if board is complete (all cells filled)
   const isBoardComplete = useCallback(() => {
@@ -318,6 +370,7 @@ function App() {
             selectedCell={selectedCell}
             onCellClick={setSelectedCell}
             mistakeCell={lastMistakeCell}
+            notes={notes}
           />
         </div>
 
@@ -337,6 +390,10 @@ function App() {
           onNumberClick={handleNumberInput}
           onEraseClick={handleEraseClick}
           disabled={isPaused || isCompleted || isFailed}
+          notesMode={notesMode}
+          onNotesToggle={() => setNotesMode(prev => !prev)}
+          onClearAllNotes={() => setNotes({})}
+          hasNotes={Object.keys(notes).length > 0}
         />
 
         {/* Verification Error */}

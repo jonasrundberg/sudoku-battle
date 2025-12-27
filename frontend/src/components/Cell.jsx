@@ -1,6 +1,6 @@
 /**
  * Individual cell in the Sudoku grid.
- * Handles display of given numbers, user input, conflicts, and selection.
+ * Handles display of given numbers, user input, conflicts, notes, and selection.
  */
 
 import { memo } from 'react'
@@ -15,6 +15,7 @@ function Cell({
   isMistake,
   isWrong,
   maskValue = false,
+  notes = [],
   row,
   col,
   onClick,
@@ -50,6 +51,24 @@ function Cell({
   }
   const fontWeight = isGiven ? 'font-bold' : 'font-semibold'
 
+  // Render notes in a 3x3 mini-grid
+  const renderNotes = () => {
+    if (value !== 0 || notes.length === 0) return null
+    
+    return (
+      <div className="grid grid-cols-3 grid-rows-3 w-full h-full p-0.5">
+        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+          <span
+            key={num}
+            className="flex items-center justify-center text-[0.5rem] sm:text-[0.6rem] text-gray-500 font-medium leading-none"
+          >
+            {notes.includes(num) ? num : ''}
+          </span>
+        ))}
+      </div>
+    )
+  }
+
   return (
     <button
       type="button"
@@ -67,7 +86,7 @@ function Cell({
       `}
       aria-label={`Cell row ${row + 1} column ${col + 1}, value ${value || 'empty'}`}
     >
-      {value !== 0 ? (maskValue ? '●' : value) : ''}
+      {value !== 0 ? (maskValue ? '●' : value) : renderNotes()}
     </button>
   )
 }
@@ -83,6 +102,7 @@ export default memo(Cell, (prevProps, nextProps) => {
     prevProps.isSameNumber === nextProps.isSameNumber &&
     prevProps.isMistake === nextProps.isMistake &&
     prevProps.isWrong === nextProps.isWrong &&
-    prevProps.maskValue === nextProps.maskValue
+    prevProps.maskValue === nextProps.maskValue &&
+    JSON.stringify(prevProps.notes) === JSON.stringify(nextProps.notes)
   )
 })

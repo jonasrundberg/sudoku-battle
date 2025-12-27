@@ -56,7 +56,7 @@ function Cell({
     if (value !== 0 || notes.length === 0) return null
     
     return (
-      <div className="grid grid-cols-3 grid-rows-3 w-full h-full p-0.5">
+      <div className="grid grid-cols-3 grid-rows-3 w-full h-full">
         {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
           <span
             key={num}

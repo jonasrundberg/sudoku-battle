@@ -100,8 +100,13 @@ function App() {
             if (progress.is_failed) {
               pause()
               setShowGameOver(true)
-            } else if (!progress.is_completed && !progress.is_paused) {
+            } else if (!progress.is_completed) {
+              // Always start the timer mechanism for in-progress games
               start()
+              // If it was saved as paused, pause it after starting
+              if (progress.is_paused) {
+                pause()
+              }
             }
           } else {
             start()

@@ -223,8 +223,19 @@ export default function AccountModal({ userId, onUserIdChange, onClose }) {
               ) : (
                 <div className="space-y-3">
                   <p className="text-sm text-gray-600">
-                    Create a passkey to play on multiple devices. Your progress
-                    and stats will sync automatically.
+                    <strong>Only needed if you want to play on other devices</strong> (like your phone and computer). 
+                    Your progress on this device is saved automatically.
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    A passkey lets you securely sign in using Face ID, Touch ID, or Windows Hello instead of a password.{' '}
+                    <a 
+                      href="https://safety.google/authentication/passkey/" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-500 hover:text-blue-600 underline"
+                    >
+                      Learn more
+                    </a>
                   </p>
                   <button
                     type="button"
@@ -240,9 +251,6 @@ export default function AccountModal({ userId, onUserIdChange, onClose }) {
                       </>
                     )}
                   </button>
-                  <p className="text-xs text-gray-500 text-center">
-                    Uses Face ID, Touch ID, or Windows Hello
-                  </p>
                 </div>
               )}
             </div>

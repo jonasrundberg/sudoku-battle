@@ -149,8 +149,8 @@ export default function LeaderboardPage() {
                       index === 0 ? 'bg-yellow-50' : index === 1 ? 'bg-gray-50' : index === 2 ? 'bg-orange-50' : ''
                     } hover:bg-blue-50 transition-colors`}
                   >
-                    <td className="px-2 py-3 whitespace-nowrap">
-                      <span className="font-semibold text-gray-800">{member.username}</span>
+                    <td className="px-2 py-3 max-w-[120px] sm:max-w-none">
+                      <span className="font-semibold text-gray-800 block truncate" title={member.username}>{member.username}</span>
                     </td>
                     <td className="px-2 py-3 whitespace-nowrap text-center font-mono text-gray-700">
                       {member.today_time ? formatTime(member.today_time) : member.today_failed ? '❌' : '-'}

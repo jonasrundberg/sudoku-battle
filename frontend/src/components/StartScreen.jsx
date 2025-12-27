@@ -189,11 +189,11 @@ export default function StartScreen({ userId, onPlay, onStatsClick, onLeaderboar
             )}
           </div>
 
-          {/* Friends completions */}
+          {/* Friends completions and failures */}
           {friends.length > 0 && (
             <div className="mt-6 pt-4 border-t border-gray-100">
               <h3 className="text-sm font-medium text-gray-500 mb-3">
-                Friends who completed today
+                Friends who played today
                 <span className="text-xs text-gray-400 ml-2">(tap to watch)</span>
               </h3>
               <div className="space-y-2">
@@ -201,13 +201,21 @@ export default function StartScreen({ userId, onPlay, onStatsClick, onLeaderboar
                   <Link
                     key={friend.user_id}
                     to={`/replay/${friend.user_id}`}
-                    className="w-full flex items-center justify-between py-2 px-3 bg-green-50 rounded-lg hover:bg-green-100 active:bg-green-200 transition-colors cursor-pointer"
+                    className={`w-full flex items-center justify-between py-2 px-3 rounded-lg transition-colors cursor-pointer ${
+                      friend.is_failed 
+                        ? 'bg-red-50 hover:bg-red-100 active:bg-red-200' 
+                        : 'bg-green-50 hover:bg-green-100 active:bg-green-200'
+                    }`}
                   >
                     <span className="font-medium text-gray-800 flex items-center gap-2">
                       {friend.username}
                       <span className="text-xs text-gray-400">▶</span>
                     </span>
-                    <span className="text-green-600 font-mono">{formatTime(friend.time_seconds)}</span>
+                    {friend.is_failed ? (
+                      <span className="text-red-500 font-bold">✗</span>
+                    ) : (
+                      <span className="text-green-600 font-mono">{formatTime(friend.time_seconds)}</span>
+                    )}
                   </Link>
                 ))}
               </div>

@@ -338,7 +338,7 @@ def get_today_player_count() -> int:
 
 def get_friends_completions_today(user_id: str) -> list[dict]:
     """
-    Get friends who completed today's puzzle, sorted by shared leaderboard count.
+    Get friends who completed or failed today's puzzle, sorted by shared leaderboard count.
 
     Friends are defined as users who share at least one leaderboard with this user.
     """
@@ -361,21 +361,26 @@ def get_friends_completions_today(user_id: str) -> list[dict]:
     if not friend_leaderboard_count:
         return []
 
-    # Get today's completions for all friends
+    # Get today's completions and failures for all friends
     friends_completions = []
     for friend_user_id, shared_count in friend_leaderboard_count.items():
         progress = get_progress(friend_user_id, date.today())
-        if progress and progress.get("is_completed"):
+        if progress and (progress.get("is_completed") or progress.get("is_failed")):
             user = get_or_create_user(friend_user_id)
             friends_completions.append({
                 "user_id": friend_user_id,
                 "username": user.get("username") or f"Player-{friend_user_id[:6]}",
-                "time_seconds": progress.get("time_seconds", 0),
+                "time_seconds": progress.get("time_seconds", 0) if progress.get("is_completed") else None,
+                "is_failed": progress.get("is_failed", False),
                 "shared_leaderboards": shared_count,
             })
 
-    # Sort by shared leaderboard count (desc), then by time (asc)
-    friends_completions.sort(key=lambda x: (-x["shared_leaderboards"], x["time_seconds"]))
+    # Sort: completed first (by time asc), then failed, all by shared leaderboard count
+    friends_completions.sort(key=lambda x: (
+        x["is_failed"],  # False (completed) comes before True (failed)
+        -x["shared_leaderboards"],
+        x["time_seconds"] if x["time_seconds"] else 999999
+    ))
 
     return friends_completions
 

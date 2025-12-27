@@ -153,7 +153,7 @@ export default function LeaderboardPage() {
                       <span className="font-semibold text-gray-800">{member.username}</span>
                     </td>
                     <td className="px-2 py-3 whitespace-nowrap text-center font-mono text-gray-700">
-                      {member.today_time ? formatTime(member.today_time) : '-'}
+                      {member.today_time ? formatTime(member.today_time) : member.today_failed ? '❌' : '-'}
                     </td>
                     <td className="px-2 py-3 whitespace-nowrap text-center">
                       <span className="text-green-600 font-semibold">{member.games_completed}</span>

@@ -18,9 +18,9 @@ export default function GameOverModal({ mistakes, onContinue }) {
         
         <div className="bg-red-50 rounded-lg p-4 mb-6">
           <div className="text-4xl mb-2">
-            <span className="text-gray-300">⭐</span>
-            <span className="text-gray-300">⭐</span>
-            <span className="text-gray-300">⭐</span>
+            <span className="grayscale opacity-40">⭐</span>
+            <span className="grayscale opacity-40">⭐</span>
+            <span className="grayscale opacity-40">⭐</span>
           </div>
           <div className="text-sm text-red-600 font-medium">
             No stars earned

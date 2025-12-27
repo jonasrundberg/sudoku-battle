@@ -494,12 +494,20 @@ def get_member_leaderboard_stats(leaderboard_id: str, user_id: str) -> dict:
     last_5_times = times[:5]
     avg_time_last_5 = sum(last_5_times) / len(last_5_times) if last_5_times else None
 
-    # Get today's time
+    # Get today's time and check if failed
     today_str = date.today().isoformat()
     today_time = None
+    today_failed = None
     for game in completed_games:
         if game.get("date") == today_str:
             today_time = game.get("time_seconds")
+            break
+
+    # Check if today's game was failed
+    for doc in progress_list:
+        data = doc.to_dict()
+        if data.get("date") == today_str and data.get("is_failed"):
+            today_failed = True
             break
 
     return {
@@ -511,6 +519,7 @@ def get_member_leaderboard_stats(leaderboard_id: str, user_id: str) -> dict:
         "avg_time_all": round(avg_time_all, 1) if avg_time_all else None,
         "avg_time_last_5": round(avg_time_last_5, 1) if avg_time_last_5 else None,
         "today_time": today_time,
+        "today_failed": today_failed,
     }
 
 
@@ -569,12 +578,19 @@ def get_global_top_players(limit: int = 100) -> list[dict]:
         last_5_times = times[:5]
         avg_time_last_5 = sum(last_5_times) / len(last_5_times) if last_5_times else None
 
-        # Get today's time
+        # Get today's time and check if failed
         today_str = date.today().isoformat()
         today_time = None
+        today_failed = None
         for game in completed_games:
             if game.get("date") == today_str:
                 today_time = game.get("time_seconds")
+                break
+
+        # Check if today's game was failed
+        for game in progress_list:
+            if game.get("date") == today_str and game.get("is_failed"):
+                today_failed = True
                 break
 
         player_stats.append({
@@ -586,6 +602,7 @@ def get_global_top_players(limit: int = 100) -> list[dict]:
             "avg_time_all": round(avg_time_all, 1) if avg_time_all else None,
             "avg_time_last_5": round(avg_time_last_5, 1) if avg_time_last_5 else None,
             "today_time": today_time,
+            "today_failed": today_failed,
         })
 
     # Sort by games_completed descending

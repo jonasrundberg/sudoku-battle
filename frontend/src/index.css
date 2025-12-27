@@ -23,7 +23,7 @@ body {
 }
 
 .sudoku-cell {
-  @apply flex items-center justify-center bg-white text-3xl font-semibold cursor-pointer transition-colors duration-100;
+  @apply flex items-center justify-center bg-white text-3xl font-semibold cursor-pointer transition-colors duration-100 overflow-hidden;
   aspect-ratio: 1;
 }
 

@@ -56,11 +56,11 @@ function Cell({
     if (value !== 0 || notes.length === 0) return null
     
     return (
-      <div className="grid grid-cols-3 grid-rows-3 w-full h-full">
+      <div className="grid grid-cols-3 grid-rows-3 w-full h-full min-w-0 min-h-0">
         {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
           <span
             key={num}
-            className="flex items-center justify-center text-[0.5rem] sm:text-[0.6rem] text-gray-500 font-medium leading-none"
+            className="flex items-center justify-center text-[7px] sm:text-[0.6rem] text-gray-500 font-medium leading-none min-w-0 min-h-0"
           >
             {notes.includes(num) ? num : ''}
           </span>

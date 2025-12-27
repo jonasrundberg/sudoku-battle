@@ -159,6 +159,170 @@ def update_user_stats_on_completion(
     user_ref.update({"stats": stats})
 
 
+def recalculate_user_stats(user_id: str, dry_run: bool = False) -> dict:
+    """
+    Recalculate user stats from progress history.
+
+    This rebuilds all stats from the progress collection, useful for:
+    - Fixing sync issues
+    - Account migrations
+    - Data recovery
+
+    Args:
+        user_id: The user ID to recalculate stats for
+        dry_run: If True, print what would be updated but don't save
+
+    Returns:
+        The newly calculated stats dict
+    """
+    from app.services.puzzle_generator import get_difficulty_for_date
+
+    db = get_firestore_client()
+
+    # Get all progress records for this user
+    progress_docs = db.collection("progress").where(
+        filter=FieldFilter("user_id", "==", user_id)
+    ).stream()
+
+    # Collect completed games sorted by date
+    completed_games = []
+    failed_games = []
+
+    for doc in progress_docs:
+        data = doc.to_dict()
+        game_date = date.fromisoformat(data.get("date"))
+
+        if data.get("is_completed"):
+            # Get difficulty for this date
+            difficulty, _ = get_difficulty_for_date(game_date)
+            completed_games.append({
+                "date": game_date,
+                "time_seconds": data.get("time_seconds", 0),
+                "difficulty": difficulty,
+                "mistakes": data.get("mistakes", 0),
+            })
+        elif data.get("is_failed"):
+            failed_games.append({
+                "date": game_date,
+            })
+
+    # Sort by date
+    completed_games.sort(key=lambda x: x["date"])
+
+    # Calculate stats
+    total_completed = len(completed_games)
+    total_failed = len(failed_games)
+    total_time_seconds = sum(g["time_seconds"] for g in completed_games)
+
+    # Best times by difficulty
+    best_times = {}
+    for game in completed_games:
+        diff = game["difficulty"]
+        time = game["time_seconds"]
+        if diff not in best_times or time < best_times[diff]:
+            best_times[diff] = time
+
+    # Calculate streaks
+    current_streak = 0
+    longest_streak = 0
+    last_completed_date = None
+
+    if completed_games:
+        # Process in chronological order
+        streak = 1
+        prev_date = completed_games[0]["date"]
+
+        for game in completed_games[1:]:
+            days_diff = (game["date"] - prev_date).days
+            if days_diff == 1:
+                streak += 1
+            elif days_diff > 1:
+                # Streak broken - check if it's the longest
+                if streak > longest_streak:
+                    longest_streak = streak
+                streak = 1
+            # days_diff == 0: same day, don't change streak
+            prev_date = game["date"]
+
+        # Final streak check
+        if streak > longest_streak:
+            longest_streak = streak
+
+        # Current streak: count back from most recent
+        last_game_date = completed_games[-1]["date"]
+        last_completed_date = last_game_date.isoformat()
+
+        # Check if streak is still active (last game was today or yesterday)
+        today = date.today()
+        days_since_last = (today - last_game_date).days
+
+        if days_since_last <= 1:
+            # Count current streak backwards from last game
+            current_streak = 1
+            for i in range(len(completed_games) - 2, -1, -1):
+                prev_game = completed_games[i]
+                days_diff = (last_game_date - prev_game["date"]).days
+                if days_diff == 1:
+                    current_streak += 1
+                    last_game_date = prev_game["date"]
+                elif days_diff > 1:
+                    break
+                # days_diff == 0: same day, continue checking
+        else:
+            current_streak = 0
+
+    new_stats = {
+        "total_completed": total_completed,
+        "total_failed": total_failed,
+        "total_time_seconds": total_time_seconds,
+        "best_times": best_times,
+        "current_streak": current_streak,
+        "longest_streak": longest_streak,
+        "last_completed_date": last_completed_date,
+    }
+
+    print(f"User: {user_id}")
+    print(f"  Games completed: {total_completed}")
+    print(f"  Games failed: {total_failed}")
+    print(f"  Total time: {total_time_seconds}s ({total_time_seconds // 60}m)")
+    print(f"  Best times: {best_times}")
+    print(f"  Current streak: {current_streak}")
+    print(f"  Longest streak: {longest_streak}")
+    print(f"  Last completed: {last_completed_date}")
+
+    if dry_run:
+        print("  [DRY RUN] Would update stats")
+    else:
+        user_ref = db.collection("users").document(user_id)
+        user_ref.update({"stats": new_stats})
+        print("  ✅ Stats updated")
+
+    return new_stats
+
+
+def recalculate_all_user_stats(dry_run: bool = False) -> None:
+    """
+    Recalculate stats for all users.
+
+    Args:
+        dry_run: If True, print what would be updated but don't save
+    """
+    db = get_firestore_client()
+
+    print("=== Recalculating All User Stats ===\n")
+
+    users = db.collection("users").stream()
+    count = 0
+
+    for user_doc in users:
+        user_id = user_doc.id
+        recalculate_user_stats(user_id, dry_run=dry_run)
+        print()
+        count += 1
+
+    print(f"=== Done: {count} users processed ===")
+
+
 def get_today_player_count() -> int:
     """Get the number of unique players who have started today's puzzle."""
     db = get_firestore_client()

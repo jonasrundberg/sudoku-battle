@@ -7,11 +7,12 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import Header from './Header'
-import { getTodayStats, getFriendsCompletions, getProgress } from '../utils/api'
+import { getTodayStats, getFriendsCompletions, getProgress, getUserLeaderboards } from '../utils/api'
 
 export default function StartScreen({ userId, onPlay, onStatsClick, onLeaderboardClick, onAccountClick }) {
   const [stats, setStats] = useState(null)
   const [friends, setFriends] = useState([])
+  const [leaderboards, setLeaderboards] = useState([])
   const [loading, setLoading] = useState(true)
   const [todayProgress, setTodayProgress] = useState(null)
 
@@ -21,14 +22,16 @@ export default function StartScreen({ userId, onPlay, onStatsClick, onLeaderboar
 
   const loadData = async () => {
     try {
-      const [statsData, friendsData, progressData] = await Promise.all([
+      const [statsData, friendsData, progressData, leaderboardsData] = await Promise.all([
         getTodayStats(),
         userId ? getFriendsCompletions(userId) : { friends: [] },
-        userId ? getProgress(userId).catch(() => null) : null
+        userId ? getProgress(userId).catch(() => null) : null,
+        userId ? getUserLeaderboards(userId).catch(() => ({ leaderboards: [] })) : { leaderboards: [] }
       ])
       setStats(statsData)
       setFriends(friendsData.friends || [])
       setTodayProgress(progressData)
+      setLeaderboards(leaderboardsData.leaderboards || [])
     } catch (err) {
       console.error('Failed to load data:', err)
     } finally {
@@ -142,6 +145,49 @@ export default function StartScreen({ userId, onPlay, onStatsClick, onLeaderboar
               You have 3 lives. Make 3 mistakes and it's game over!
             </p>
           )}
+
+          {/* My Leaderboards section */}
+          <div className="mt-6 pt-4 border-t border-gray-100">
+            <h3 className="text-sm font-medium text-gray-500 mb-3 flex items-center gap-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                />
+              </svg>
+              My Leaderboards
+            </h3>
+            {leaderboards.length > 0 ? (
+              <div className="space-y-2">
+                {leaderboards.map((lb) => (
+                  <Link
+                    key={lb.id}
+                    to={`/leaderboard/${lb.invite_code}`}
+                    className="w-full flex items-center justify-between py-2 px-3 bg-blue-50 rounded-lg hover:bg-blue-100 active:bg-blue-200 transition-colors cursor-pointer"
+                  >
+                    <span className="font-medium text-gray-800">{lb.name}</span>
+                    <span className="text-xs text-gray-400">→</span>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={onLeaderboardClick}
+                className="w-full py-2 px-3 text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 active:bg-blue-200 transition-colors text-sm font-medium"
+              >
+                Create or join a leaderboard
+              </button>
+            )}
+          </div>
 
           {/* Friends completions */}
           {friends.length > 0 && (

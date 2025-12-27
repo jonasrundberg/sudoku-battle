@@ -107,26 +107,78 @@ def generate_puzzle(puzzle_date: date) -> dict:
     }
 
 
+def is_valid_complete_sudoku(board: list[list[int]]) -> bool:
+    """
+    Check if a board is a complete, valid sudoku solution.
+
+    Validates that:
+    - All cells contain values 1-9
+    - Each row has unique values
+    - Each column has unique values
+    - Each 3x3 box has unique values
+
+    Args:
+        board: 9x9 grid to validate
+
+    Returns:
+        True if the board is a valid complete sudoku
+    """
+    # Check all cells are filled with 1-9
+    for row in board:
+        if not all(1 <= cell <= 9 for cell in row):
+            return False
+
+    # Check each row has unique values
+    for row in board:
+        if len(set(row)) != 9:
+            return False
+
+    # Check each column has unique values
+    for col in range(9):
+        column = [board[row][col] for row in range(9)]
+        if len(set(column)) != 9:
+            return False
+
+    # Check each 3x3 box has unique values
+    for box_row in range(3):
+        for box_col in range(3):
+            box = [
+                board[box_row * 3 + r][box_col * 3 + c]
+                for r in range(3)
+                for c in range(3)
+            ]
+            if len(set(box)) != 9:
+                return False
+
+    return True
+
+
 def verify_solution(puzzle_date: date, submitted_board: list[list[int]]) -> bool:
     """
-    Verify if a submitted solution matches the correct solution.
+    Verify if a submitted solution is valid for the puzzle.
+
+    This accepts ANY valid sudoku solution, not just the one generated
+    by py-sudoku. This is important because some puzzles may have
+    multiple valid solutions.
 
     Args:
         puzzle_date: The date of the puzzle
         submitted_board: User's submitted 9x9 grid
 
     Returns:
-        True if the solution is correct, False otherwise
+        True if the solution is valid, False otherwise
     """
-    correct = generate_puzzle(puzzle_date)["solution"]
+    puzzle = generate_puzzle(puzzle_date)["puzzle"]
 
-    # Compare each cell
+    # 1. Check that user didn't change any of the original given numbers
     for row in range(9):
         for col in range(9):
-            if submitted_board[row][col] != correct[row][col]:
-                return False
+            if puzzle[row][col] != 0:  # This was a given number
+                if submitted_board[row][col] != puzzle[row][col]:
+                    return False
 
-    return True
+    # 2. Check that the submitted board is a valid complete sudoku
+    return is_valid_complete_sudoku(submitted_board)
 
 
 def get_today_puzzle() -> dict:

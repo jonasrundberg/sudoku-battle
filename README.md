@@ -1,8 +1,8 @@
-# Sudoku Battle 🎮
+# Family Sudoku 🧩
 
 A daily sudoku challenge where everyone gets the same puzzle. Compete with friends, track your stats, and climb the leaderboards.
 
-**🌐 Play now: [sudoku-battle-295309887144.europe-west1.run.app](https://sudoku-battle-295309887144.europe-west1.run.app)**
+**🌐 Play now: [familysudoku.com](https://familysudoku.com)**
 
 ## How It Works
 

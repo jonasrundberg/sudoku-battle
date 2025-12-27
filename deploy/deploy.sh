@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Sudoku Battle - Cloud Run Deployment Script
+# Family Sudoku - Cloud Run Deployment Script
 # 
 # Prerequisites:
 # 1. Install gcloud CLI: https://cloud.google.com/sdk/docs/install
@@ -36,7 +36,7 @@ if [ -z "$PROJECT_ID" ]; then
     exit 1
 fi
 
-echo "🎮 Sudoku Battle - Cloud Run Deployment"
+echo "🎮 Family Sudoku - Cloud Run Deployment"
 echo ""
 echo "   Project: $PROJECT_ID"
 echo "   Region:  $REGION"

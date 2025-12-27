@@ -9,7 +9,7 @@ export default function Header({ userId, onStatsClick, onLeaderboardClick, onAcc
         {/* Logo and title */}
         <div className="flex items-center gap-2">
           <img src="/sudoku.svg" alt="" className="h-8 w-8" />
-          <h1 className="text-xl font-bold text-gray-900">Sudoku Battle</h1>
+          <h1 className="text-xl font-bold text-gray-900">Family Sudoku</h1>
         </div>
 
         {/* Navigation buttons */}

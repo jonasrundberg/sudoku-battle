@@ -5,7 +5,7 @@ import secrets
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from webauthn import (
     generate_registration_options,
@@ -32,6 +32,29 @@ settings = get_settings()
 # In-memory challenge store (should use Redis/Firestore in production for multi-instance)
 # For now, we store challenges in Firestore for persistence
 CHALLENGE_EXPIRY_SECONDS = 300  # 5 minutes
+
+
+def get_webauthn_rp_id(request: Request) -> str:
+    """Get WebAuthn RP ID from request headers or fall back to settings."""
+    if settings.environment == "production":
+        # In production, extract from Host header
+        host = request.headers.get("host", "")
+        # Remove port if present
+        return host.split(":")[0]
+    return settings.webauthn_rp_id
+
+
+def get_webauthn_origin(request: Request) -> str:
+    """Get WebAuthn origin from request headers or fall back to settings."""
+    if settings.environment == "production":
+        # In production, use Origin header or construct from Host
+        origin = request.headers.get("origin")
+        if origin:
+            return origin
+        # Fallback: construct from Host header (assume HTTPS in production)
+        host = request.headers.get("host", "")
+        return f"https://{host}"
+    return settings.webauthn_origin
 
 
 class RegisterStartRequest(BaseModel):
@@ -64,7 +87,7 @@ class AuthResponse(BaseModel):
 
 
 @router.post("/auth/register/start")
-async def register_start(request: RegisterStartRequest):
+async def register_start(request: RegisterStartRequest, http_request: Request):
     """
     Start passkey registration.
     Returns WebAuthn options for the browser to create a credential.
@@ -82,7 +105,7 @@ async def register_start(request: RegisterStartRequest):
 
     # Generate registration options
     options = generate_registration_options(
-        rp_id=settings.webauthn_rp_id,
+        rp_id=get_webauthn_rp_id(http_request),
         rp_name=settings.webauthn_rp_name,
         user_id=request.user_id.encode(),
         user_name=username,
@@ -114,7 +137,7 @@ async def register_start(request: RegisterStartRequest):
 
 
 @router.post("/auth/register/finish", response_model=AuthResponse)
-async def register_finish(request: RegisterFinishRequest):
+async def register_finish(request: RegisterFinishRequest, http_request: Request):
     """
     Complete passkey registration.
     Verifies the credential and stores it.
@@ -131,8 +154,8 @@ async def register_finish(request: RegisterFinishRequest):
         verification = verify_registration_response(
             credential=request.credential,
             expected_challenge=challenge,
-            expected_rp_id=settings.webauthn_rp_id,
-            expected_origin=settings.webauthn_origin,
+            expected_rp_id=get_webauthn_rp_id(http_request),
+            expected_origin=get_webauthn_origin(http_request),
         )
 
         # Store the credential
@@ -158,7 +181,7 @@ async def register_finish(request: RegisterFinishRequest):
 
 
 @router.post("/auth/login/start")
-async def login_start(request: LoginStartRequest):
+async def login_start(request: LoginStartRequest, http_request: Request):
     """
     Start passkey login.
     Returns WebAuthn options for the browser to get a credential.
@@ -168,7 +191,7 @@ async def login_start(request: LoginStartRequest):
 
     # Generate authentication options (discoverable credentials)
     options = generate_authentication_options(
-        rp_id=settings.webauthn_rp_id,
+        rp_id=get_webauthn_rp_id(http_request),
         user_verification=UserVerificationRequirement.REQUIRED,
         # Empty allow_credentials = discoverable credential (resident key)
     )
@@ -186,7 +209,7 @@ async def login_start(request: LoginStartRequest):
 
 
 @router.post("/auth/login/finish", response_model=AuthResponse)
-async def login_finish(request: LoginFinishRequest):
+async def login_finish(request: LoginFinishRequest, http_request: Request):
     """
     Complete passkey login.
     Verifies the credential and returns the user's passkey.
@@ -223,8 +246,8 @@ async def login_finish(request: LoginFinishRequest):
         verification = verify_authentication_response(
             credential=request.credential,
             expected_challenge=challenge,
-            expected_rp_id=settings.webauthn_rp_id,
-            expected_origin=settings.webauthn_origin,
+            expected_rp_id=get_webauthn_rp_id(http_request),
+            expected_origin=get_webauthn_origin(http_request),
             credential_public_key=bytes.fromhex(credential_data["public_key"]),
             credential_current_sign_count=credential_data["sign_count"],
         )

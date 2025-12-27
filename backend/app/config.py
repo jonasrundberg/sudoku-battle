@@ -22,7 +22,7 @@ class Settings(BaseSettings):
 
     # WebAuthn settings
     webauthn_rp_id: str = "localhost"  # Relying Party ID (domain)
-    webauthn_rp_name: str = "Sudoku Battle"
+    webauthn_rp_name: str = "Family Sudoku"
     webauthn_origin: str = "http://localhost:5173"
 
     class Config:

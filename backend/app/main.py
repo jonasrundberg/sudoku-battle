@@ -12,7 +12,7 @@ from app.api import puzzle, progress, user, leaderboard, auth
 settings = get_settings()
 
 app = FastAPI(
-    title="Sudoku Battle API",
+    title="Family Sudoku API",
     description="Daily sudoku challenge with leaderboards",
     version="1.0.0",
 )

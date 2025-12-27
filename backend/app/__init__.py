@@ -1,1 +1,1 @@
-"""Sudoku Battle Backend API"""
+"""Family Sudoku Backend API"""

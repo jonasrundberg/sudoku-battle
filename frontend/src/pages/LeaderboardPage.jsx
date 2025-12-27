@@ -78,7 +78,7 @@ export default function LeaderboardPage() {
             to="/"
             className="inline-block px-6 py-3 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors"
           >
-            Go to Sudoku Battle
+            Go to Family Sudoku
           </Link>
         </div>
       </div>
@@ -92,7 +92,7 @@ export default function LeaderboardPage() {
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 text-xl font-bold text-gray-800">
             <img src="/sudoku.svg" alt="" className="h-8 w-8" />
-            Sudoku Battle
+            Family Sudoku
           </Link>
         </div>
       </header>
@@ -183,7 +183,7 @@ export default function LeaderboardPage() {
             to="/"
             className="inline-block px-6 py-3 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors"
           >
-            Play Sudoku Battle
+            Play Family Sudoku
           </Link>
         </div>
       </main>

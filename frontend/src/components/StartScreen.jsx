@@ -124,10 +124,14 @@ export default function StartScreen({ userId, onPlay, onStatsClick, onLeaderboar
               onClick={onPlay}
               className="w-full py-4 bg-blue-500 text-white text-xl font-bold rounded-xl hover:bg-blue-600 active:bg-blue-700 transition-colors shadow-lg hover:shadow-xl"
             >
-              ▶ Play {stats && (
-                <span className="font-normal opacity-90">
-                  — today is <span className="capitalize">{stats.difficulty}</span>
-                </span>
+              {todayProgress && !todayProgress.is_completed && !todayProgress.is_failed ? (
+                <>▶ Resume Game</>
+              ) : (
+                <>▶ Play {stats && (
+                  <span className="font-normal opacity-90">
+                    — today is <span className="capitalize">{stats.difficulty}</span>
+                  </span>
+                )}</>
               )}
             </button>
           )}

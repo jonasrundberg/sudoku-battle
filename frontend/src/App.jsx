@@ -276,6 +276,15 @@ function App() {
     setShowStartScreen(false)
   }, [])
 
+  // Handle clicking logo to go back to start screen
+  const handleHomeClick = useCallback(() => {
+    if (!isCompleted && !isFailed && isRunning) {
+      pause()
+      saveProgress(board, time, true, mistakes, moveHistory)
+    }
+    setShowStartScreen(true)
+  }, [isCompleted, isFailed, isRunning, pause, saveProgress, board, time, mistakes, moveHistory])
+
   // Show loading while checking for existing progress
   if (userIdLoading || checkingProgress) {
     return (
@@ -345,6 +354,7 @@ function App() {
         onStatsClick={() => setShowStats(true)}
         onLeaderboardClick={() => setShowLeaderboard(true)}
         onAccountClick={() => setShowAccount(true)}
+        onHomeClick={handleHomeClick}
       />
 
       <main className="flex-1 flex flex-col items-center p-2 pt-1 max-w-lg mx-auto w-full">

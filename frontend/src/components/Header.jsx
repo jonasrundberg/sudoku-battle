@@ -2,15 +2,20 @@
  * App header with title, user info, and navigation.
  */
 
-export default function Header({ userId, onStatsClick, onLeaderboardClick, onAccountClick }) {
+export default function Header({ userId, onStatsClick, onLeaderboardClick, onAccountClick, onHomeClick }) {
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
       <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
-        {/* Logo and title */}
-        <div className="flex items-center gap-2">
+        {/* Logo and title - clickable to go home */}
+        <button
+          type="button"
+          onClick={onHomeClick}
+          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          aria-label="Go to home screen"
+        >
           <img src="/sudoku.svg" alt="" className="h-8 w-8" />
           <h1 className="text-xl font-bold text-gray-900">Family Sudoku</h1>
-        </div>
+        </button>
 
         {/* Navigation buttons */}
         <div className="flex items-center gap-2">

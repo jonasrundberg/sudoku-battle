@@ -80,6 +80,8 @@ class VerifyRequest(BaseModel):
     user_id: str = Field(..., min_length=1, description="User's unique ID")
     board: list[list[int]] = Field(..., description="Completed board to verify")
     time_seconds: int = Field(..., ge=0, description="Completion time in seconds")
+    mistakes: int = Field(default=0, ge=0, le=3, description="Number of mistakes made")
+    move_history: list[MoveRecord] = Field(default_factory=list, description="History of all moves for replay")
 
 
 class VerifyResponse(BaseModel):

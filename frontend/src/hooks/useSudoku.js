@@ -103,7 +103,8 @@ export function useSudoku(userId) {
 
   // Handle cell input - returns true if correct, false if wrong
   // Also returns newBoard and newMoveHistory to avoid stale closure issues when saving
-  const handleCellInput = useCallback((row, col, value) => {
+  // currentTimeMs is passed from the timer to ensure accurate time tracking (excludes paused time)
+  const handleCellInput = useCallback((row, col, value, currentTimeMs = 0) => {
     // Don't allow editing original (given) cells
     if (originalBoard[row][col] !== 0) return { valid: false }
     if (isCompleted || isFailed) return { valid: false }
@@ -112,13 +113,12 @@ export function useSudoku(userId) {
     const isCorrect = solution[row][col] === value
     const cellKey = `${row},${col}`
     
-    // Record move for replay
-    const timeMs = gameStartTime.current ? Date.now() - gameStartTime.current : 0
+    // Record move for replay (use passed time to exclude paused time)
     const newMove = {
       row,
       col,
       value,
-      time_ms: timeMs,
+      time_ms: currentTimeMs,
       is_correct: isCorrect,
     }
     
@@ -169,20 +169,20 @@ export function useSudoku(userId) {
   }, [originalBoard, solution, isCompleted, isFailed, mistakes, board, moveHistory])
 
   // Handle erase
-  const handleErase = useCallback((row, col) => {
+  // currentTimeMs is passed from the timer to ensure accurate time tracking (excludes paused time)
+  const handleErase = useCallback((row, col, currentTimeMs = 0) => {
     // Don't allow erasing original (given) cells
     if (originalBoard[row][col] !== 0) return
     if (isCompleted || isFailed) return
 
     const cellKey = `${row},${col}`
     
-    // Record erase for replay (value 0 = erase)
-    const timeMs = gameStartTime.current ? Date.now() - gameStartTime.current : 0
+    // Record erase for replay (value 0 = erase, use passed time to exclude paused time)
     setMoveHistory(prev => [...prev, {
       row,
       col,
       value: 0,
-      time_ms: timeMs,
+      time_ms: currentTimeMs,
       is_correct: true, // Erase is always valid
     }])
     
@@ -210,7 +210,7 @@ export function useSudoku(userId) {
     if (!userId || isCompleted || isFailed) return { is_correct: false, message: 'Already completed or failed' }
 
     try {
-      const result = await verifySolution(userId, board, timeSeconds)
+      const result = await verifySolution(userId, board, timeSeconds, mistakes, moveHistory)
       
       if (result.is_correct) {
         setIsCompleted(true)
@@ -221,7 +221,7 @@ export function useSudoku(userId) {
       console.error('Failed to verify solution:', error)
       return { is_correct: false, message: 'Verification failed' }
     }
-  }, [userId, board, isCompleted, isFailed])
+  }, [userId, board, isCompleted, isFailed, mistakes, moveHistory])
 
   return {
     // Data

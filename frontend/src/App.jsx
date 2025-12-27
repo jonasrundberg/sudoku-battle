@@ -190,7 +190,8 @@ function App() {
       // Clear notes when placing a number
       clearNotesForCell(selectedCell.row, selectedCell.col)
       
-      const result = handleCellInput(selectedCell.row, selectedCell.col, num)
+      // Pass time * 1000 to get accurate time_ms (excludes paused time)
+      const result = handleCellInput(selectedCell.row, selectedCell.col, num, time * 1000)
       setVerificationError(null) // Clear error when user makes changes
       
       if (result.mistake) {
@@ -216,9 +217,10 @@ function App() {
     if (selectedCell && !isPaused && !isCompleted && !isFailed) {
       // Also clear notes when erasing
       clearNotesForCell(selectedCell.row, selectedCell.col)
-      handleErase(selectedCell.row, selectedCell.col)
+      // Pass time * 1000 to get accurate time_ms (excludes paused time)
+      handleErase(selectedCell.row, selectedCell.col, time * 1000)
     }
-  }, [selectedCell, isPaused, isCompleted, isFailed, handleErase, clearNotesForCell])
+  }, [selectedCell, isPaused, isCompleted, isFailed, handleErase, clearNotesForCell, time])
 
   // Check if board is complete (all cells filled)
   const isBoardComplete = useCallback(() => {

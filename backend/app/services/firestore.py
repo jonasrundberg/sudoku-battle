@@ -296,10 +296,12 @@ def mark_completed(
     user_id: str,
     puzzle_date: date,
     time_seconds: int,
-    difficulty: str
+    difficulty: str,
+    mistakes: int = 0,
+    move_history: list[dict] = None
 ) -> None:
     """Mark a puzzle as completed and update user stats."""
-    # Save final progress
+    # Save final progress with move history and mistakes
     save_progress(
         user_id=user_id,
         puzzle_date=puzzle_date,
@@ -307,6 +309,8 @@ def mark_completed(
         time_seconds=time_seconds,
         is_paused=False,
         is_completed=True,
+        mistakes=mistakes,
+        move_history=move_history,
     )
 
     # Update user stats

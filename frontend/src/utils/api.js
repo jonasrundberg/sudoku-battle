@@ -61,13 +61,15 @@ export async function saveProgress(userId, board, timeSeconds, isPaused = false,
   })
 }
 
-export async function verifySolution(userId, board, timeSeconds) {
+export async function verifySolution(userId, board, timeSeconds, mistakes = 0, moveHistory = []) {
   return apiRequest('/verify', {
     method: 'POST',
     body: JSON.stringify({
       user_id: userId,
       board,
       time_seconds: timeSeconds,
+      mistakes,
+      move_history: moveHistory,
     }),
   })
 }

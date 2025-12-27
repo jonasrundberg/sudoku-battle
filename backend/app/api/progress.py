@@ -181,12 +181,15 @@ async def verify_puzzle(request: VerifyRequest):
         puzzle_data = generate_puzzle(today)
         difficulty = puzzle_data["difficulty"]
 
-        # Mark as completed and update stats
+        # Mark as completed and update stats (preserve move_history and mistakes)
+        move_history_dicts = [m.model_dump() for m in request.move_history] if request.move_history else None
         firestore.mark_completed(
             user_id=request.user_id,
             puzzle_date=today,
             time_seconds=request.time_seconds,
             difficulty=difficulty,
+            mistakes=request.mistakes,
+            move_history=move_history_dicts,
         )
 
         return VerifyResponse(

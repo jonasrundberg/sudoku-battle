@@ -4,17 +4,24 @@
  */
 
 export default function Timer({ time, isPaused, isCompleted, isFailed, onPauseToggle, difficulty, mistakes, maxMistakes }) {
-  // Format time as MM:SS
+  // Format time as MM:SS with accent colon
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+    return {
+      mins: mins.toString().padStart(2, '0'),
+      secs: secs.toString().padStart(2, '0')
+    }
   }
+
+  const { mins, secs } = formatTime(time)
 
   return (
     <div className="flex items-center justify-between w-full max-w-md mb-1 px-1">
       <div className="timer text-gray-800">
-        {formatTime(time)}
+        <span>{mins}</span>
+        <span style={{ color: '#2563EB' }}>:</span>
+        <span>{secs}</span>
       </div>
       
       {!isCompleted && !isFailed && (
@@ -70,14 +77,9 @@ export default function Timer({ time, isPaused, isCompleted, isFailed, onPauseTo
         <span className="text-green-600 font-semibold">✓ Complete!</span>
       )}
 
-      {/* Difficulty and Stars */}
-      <div className="flex items-center gap-2">
-        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium capitalize
-          ${difficulty === 'easy' ? 'bg-green-100 text-green-800' : ''}
-          ${difficulty === 'medium' ? 'bg-yellow-100 text-yellow-800' : ''}
-          ${difficulty === 'hard' ? 'bg-orange-100 text-orange-800' : ''}
-          ${difficulty === 'expert' ? 'bg-red-100 text-red-800' : ''}
-        `}>
+      {/* Difficulty and Lives */}
+      <div className="flex items-center gap-4">
+        <span className="text-base text-gray-500 capitalize">
           {difficulty}
         </span>
         <div className="flex items-center gap-0.5">

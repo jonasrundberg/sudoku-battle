@@ -43,8 +43,12 @@ export default function SudokuGrid({
   return (
     <div className="w-full aspect-square">
       <div
-        className="grid border-2 border-gray-800 rounded-lg overflow-hidden"
-        style={{ gridTemplateColumns: 'repeat(9, 1fr)' }}
+        className="grid rounded-lg overflow-hidden"
+        style={{ 
+          gridTemplateColumns: 'repeat(9, 1fr)',
+          border: '1.5px solid #D1D5DB',
+          borderRadius: '8px'
+        }}
       >
         {board.map((row, rowIndex) =>
           row.map((cellValue, colIndex) => (

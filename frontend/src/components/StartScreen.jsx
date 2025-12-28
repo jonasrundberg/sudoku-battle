@@ -81,7 +81,7 @@ export default function StartScreen({ userId, onPlay, onStatsClick, onLeaderboar
         <div className="bg-white rounded-2xl shadow-lg p-6 w-full">
           {/* App description for new users */}
           <p className="text-center text-gray-600 mb-6">
-            A new puzzle every day. Compete with friends and create your own leaderboards.
+            A new puzzle every day – the same puzzle for everyone. Compete with friends and create your own leaderboards.
           </p>
 
           {/* Show completion info if already done today */}
@@ -99,7 +99,7 @@ export default function StartScreen({ userId, onPlay, onStatsClick, onLeaderboar
                 <div className="text-2xl font-mono font-bold text-green-600 mb-1">
                   {formatTime(todayProgress.time_seconds)}
                 </div>
-                <p className="text-sm text-gray-500 mt-2">New puzzle tomorrow!</p>
+                <p className="text-sm text-gray-500 mt-2">A new puzzle will be available tomorrow.</p>
               </div>
             </div>
           )}
@@ -110,7 +110,7 @@ export default function StartScreen({ userId, onPlay, onStatsClick, onLeaderboar
               <div className="text-center">
                 <h3 className="text-lg font-bold text-gray-900 mb-2">Game Over</h3>
                 <p className="text-sm text-gray-600 mb-2">You ran out of lives today.</p>
-                <p className="text-sm text-gray-500">New puzzle tomorrow!</p>
+                <p className="text-sm text-gray-500">A new puzzle will be available tomorrow.</p>
               </div>
             </div>
           )}
@@ -144,7 +144,7 @@ export default function StartScreen({ userId, onPlay, onStatsClick, onLeaderboar
           {/* Rules reminder - only show if not completed/failed */}
           {!isCompleted && !isFailed && (
             <p className="mt-4 text-sm text-gray-500 text-center">
-              You have 3 lives. Make 3 mistakes and it's game over!
+              Up to 3 mistakes allowed.
             </p>
           )}
 

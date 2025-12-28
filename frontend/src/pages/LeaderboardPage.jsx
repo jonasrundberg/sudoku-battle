@@ -146,8 +146,8 @@ export default function LeaderboardPage() {
                   <tr
                     key={member.username}
                     className={`${
-                      index === 0 ? 'bg-yellow-50' : index === 1 ? 'bg-gray-50' : index === 2 ? 'bg-orange-50' : ''
-                    } hover:bg-blue-50 transition-colors`}
+                      index % 2 === 1 ? 'bg-gray-50' : 'bg-white'
+                    } hover:bg-gray-100 transition-colors`}
                   >
                     <td className="px-2 py-3 max-w-[120px] sm:max-w-none">
                       <span className="font-semibold text-gray-800 block truncate" title={member.username}>{member.username}</span>

@@ -2,7 +2,7 @@
  * App header with title, user info, and navigation.
  */
 
-export default function Header({ userId, onStatsClick, onLeaderboardClick, onAccountClick, onHomeClick }) {
+export default function Header({ userId, onStatsClick, onLeaderboardClick, onAccountClick, onHomeClick, hasUsername = true }) {
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
       <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
@@ -71,7 +71,7 @@ export default function Header({ userId, onStatsClick, onLeaderboardClick, onAcc
           <button
             type="button"
             onClick={onAccountClick}
-            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative"
             aria-label="Account"
             title="Account"
           >
@@ -89,6 +89,10 @@ export default function Header({ userId, onStatsClick, onLeaderboardClick, onAcc
                 d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
               />
             </svg>
+            {/* Notification dot when username not set */}
+            {!hasUsername && (
+              <span className="absolute top-1 right-1 h-2.5 w-2.5 bg-orange-500 rounded-full" />
+            )}
           </button>
         </div>
       </div>

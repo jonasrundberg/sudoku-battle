@@ -15,7 +15,7 @@ import {
   mergeAccounts,
 } from '../utils/api'
 
-export default function AccountModal({ userId, onUserIdChange, onClose }) {
+export default function AccountModal({ userId, onUserIdChange, onClose, onUsernameChange }) {
   const [username, setUsername] = useState('')
   const [originalUsername, setOriginalUsername] = useState('')
   const [hasPasskey, setHasPasskey] = useState(false)
@@ -62,6 +62,10 @@ export default function AccountModal({ userId, onUserIdChange, onClose }) {
       setOriginalUsername(username.trim())
       setSuccess('Username saved!')
       setTimeout(() => setSuccess(null), 2000)
+      // Notify parent that username changed
+      if (onUsernameChange) {
+        onUsernameChange(username.trim())
+      }
     } catch (err) {
       setError('Failed to save username')
     } finally {
@@ -269,39 +273,43 @@ export default function AccountModal({ userId, onUserIdChange, onClose }) {
               )}
             </div>
 
-            {/* Divider */}
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">or</span>
-              </div>
-            </div>
+            {/* Sign in section - only show if user doesn't have a passkey yet */}
+            {!hasPasskey && (
+              <>
+                {/* Divider */}
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-200"></div>
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-2 bg-white text-gray-500">or</span>
+                  </div>
+                </div>
 
-            {/* Sign in section */}
-            <div>
-              <h3 className="font-semibold text-gray-800 mb-2">
-                Already have an account?
-              </h3>
-              <p className="text-sm text-gray-600 mb-3">
-                Sign in with your passkey to restore your progress from another device.
-              </p>
-              <button
-                type="button"
-                onClick={handleLogin}
-                disabled={passkeyLoading}
-                className="w-full py-3 border border-gray-300 rounded-lg font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {passkeyLoading ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-500"></div>
-                ) : (
-                  <>
-                    <span>🔑</span> Sign in with Passkey
-                  </>
-                )}
-              </button>
-            </div>
+                <div>
+                  <h3 className="font-semibold text-gray-800 mb-2">
+                    Already have an account?
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-3">
+                    Sign in with your passkey to restore your progress from another device.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleLogin}
+                    disabled={passkeyLoading}
+                    className="w-full py-3 border border-gray-300 rounded-lg font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {passkeyLoading ? (
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-500"></div>
+                    ) : (
+                      <>
+                        <span>🔑</span> Sign in with Passkey
+                      </>
+                    )}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>

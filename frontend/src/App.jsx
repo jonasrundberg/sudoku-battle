@@ -12,7 +12,7 @@ import StartScreen from './components/StartScreen'
 import { useUserId } from './hooks/useUserId'
 import { useSudoku } from './hooks/useSudoku'
 import { useTimer } from './hooks/useTimer'
-import { getProgress } from './utils/api'
+import { getProgress, getUserStats } from './utils/api'
 
 function App() {
   const { userId, isLoading: userIdLoading, updateUserId } = useUserId()
@@ -63,6 +63,27 @@ function App() {
   // Notes feature - local only, not saved to backend
   const [notesMode, setNotesMode] = useState(false)
   const [notes, setNotes] = useState({}) // { "row,col": [1, 3, 5], ... }
+
+  // Track if user has set a username (for header notification dot)
+  const [hasUsername, setHasUsername] = useState(true) // Assume true until loaded
+
+  // Check username status
+  const checkUsernameStatus = useCallback(async () => {
+    if (!userId) return
+    try {
+      const stats = await getUserStats(userId)
+      setHasUsername(!!stats.username)
+    } catch {
+      // Ignore errors
+    }
+  }, [userId])
+
+  // Check username on mount and when userId changes
+  useEffect(() => {
+    if (userId && !userIdLoading) {
+      checkUsernameStatus()
+    }
+  }, [userId, userIdLoading, checkUsernameStatus])
 
   // Check if user has progress for today before showing the game
   useEffect(() => {
@@ -321,6 +342,7 @@ function App() {
           <LeaderboardModal
             userId={userId}
             onClose={() => setShowLeaderboard(false)}
+            onUsernameChange={() => setHasUsername(true)}
           />
         )}
         {showAccount && (
@@ -331,6 +353,7 @@ function App() {
               window.location.reload()
             }}
             onClose={() => setShowAccount(false)}
+            onUsernameChange={() => setHasUsername(true)}
           />
         )}
       </>
@@ -357,6 +380,7 @@ function App() {
         onLeaderboardClick={() => setShowLeaderboard(true)}
         onAccountClick={() => setShowAccount(true)}
         onHomeClick={handleHomeClick}
+        hasUsername={hasUsername}
       />
 
       <main className="flex-1 flex flex-col items-center p-2 pt-1 max-w-lg mx-auto w-full">
@@ -448,6 +472,7 @@ function App() {
         <LeaderboardModal
           userId={userId}
           onClose={() => setShowLeaderboard(false)}
+          onUsernameChange={() => setHasUsername(true)}
         />
       )}
 
@@ -483,6 +508,7 @@ function App() {
             window.location.reload()
           }}
           onClose={() => setShowAccount(false)}
+          onUsernameChange={() => setHasUsername(true)}
         />
       )}
     </div>

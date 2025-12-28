@@ -9,9 +9,11 @@ import {
   createLeaderboard,
   joinLeaderboard,
   getLeaderboardResults,
+  getUserStats,
+  setUsername as saveUsername,
 } from '../utils/api'
 
-export default function LeaderboardModal({ userId, onClose }) {
+export default function LeaderboardModal({ userId, onClose, onUsernameChange }) {
   const navigate = useNavigate()
   const [leaderboards, setLeaderboards] = useState([])
   const [loading, setLoading] = useState(true)
@@ -21,13 +23,25 @@ export default function LeaderboardModal({ userId, onClose }) {
 
   // Form states
   const [newName, setNewName] = useState('')
+  const [yourName, setYourName] = useState('')
+  const [hasUsername, setHasUsername] = useState(true) // Assume true until loaded
   const [inviteCode, setInviteCode] = useState('')
   const [error, setError] = useState(null)
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     loadLeaderboards()
+    loadUserInfo()
   }, [userId])
+
+  const loadUserInfo = async () => {
+    try {
+      const stats = await getUserStats(userId)
+      setHasUsername(!!stats.username)
+    } catch (err) {
+      console.error('Failed to load user info:', err)
+    }
+  }
 
   const loadLeaderboards = async () => {
     try {
@@ -50,10 +64,18 @@ export default function LeaderboardModal({ userId, onClose }) {
     setError(null)
 
     try {
+      // Save username first if provided and user doesn't have one
+      if (!hasUsername && yourName.trim()) {
+        await saveUsername(userId, yourName.trim())
+        setHasUsername(true)
+        if (onUsernameChange) onUsernameChange(yourName.trim())
+      }
+      
       await createLeaderboard(userId, newName.trim())
       await loadLeaderboards()
       setActiveTab('list')
       setNewName('')
+      setYourName('')
     } catch (err) {
       setError('Failed to create leaderboard')
     } finally {
@@ -71,10 +93,18 @@ export default function LeaderboardModal({ userId, onClose }) {
     setError(null)
 
     try {
+      // Save username first if provided and user doesn't have one
+      if (!hasUsername && yourName.trim()) {
+        await saveUsername(userId, yourName.trim())
+        setHasUsername(true)
+        if (onUsernameChange) onUsernameChange(yourName.trim())
+      }
+      
       await joinLeaderboard(userId, inviteCode.trim())
       await loadLeaderboards()
       setActiveTab('list')
       setInviteCode('')
+      setYourName('')
     } catch (err) {
       setError('Invalid invite code')
     } finally {
@@ -243,6 +273,26 @@ export default function LeaderboardModal({ userId, onClose }) {
                 />
               </div>
 
+              {/* Show "Your name" input only if user hasn't set a username */}
+              {!hasUsername && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Your Name <span className="text-gray-400 font-normal">(optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={yourName}
+                    onChange={(e) => setYourName(e.target.value)}
+                    maxLength={30}
+                    placeholder="How others will see you"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    This name will appear on leaderboards
+                  </p>
+                </div>
+              )}
+
               {error && <p className="text-red-500 text-sm">{error}</p>}
 
               <button
@@ -278,6 +328,26 @@ export default function LeaderboardModal({ userId, onClose }) {
                   autoFocus
                 />
               </div>
+
+              {/* Show "Your name" input only if user hasn't set a username */}
+              {!hasUsername && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Your Name <span className="text-gray-400 font-normal">(optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={yourName}
+                    onChange={(e) => setYourName(e.target.value)}
+                    maxLength={30}
+                    placeholder="How others will see you"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    This name will appear on leaderboards
+                  </p>
+                </div>
+              )}
 
               {error && <p className="text-red-500 text-sm">{error}</p>}
 

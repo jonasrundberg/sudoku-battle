@@ -164,28 +164,37 @@ async def verify_puzzle(request: VerifyRequest):
     if len(request.board) != 9 or any(len(row) != 9 for row in request.board):
         raise HTTPException(status_code=400, detail="Invalid board dimensions")
 
-    # Check if already completed
+    # Get existing progress to determine puzzle date
+    # This handles the midnight edge case: if user started puzzle before midnight
+    # but submits after midnight, we verify against the puzzle they actually played
     existing_progress = firestore.get_progress(request.user_id, date.today())
+
+    # Determine puzzle date from progress, falling back to today
+    if existing_progress:
+        puzzle_date = date.fromisoformat(existing_progress["date"])
+    else:
+        puzzle_date = date.today()
+
+    # Check if already completed
     if existing_progress and existing_progress.get("is_completed"):
         return VerifyResponse(
             is_correct=True,
             message="You have already completed today's puzzle!"
         )
 
-    # Verify solution
-    today = date.today()
-    is_correct = verify_solution(today, request.board)
+    # Verify solution against the puzzle date from progress
+    is_correct = verify_solution(puzzle_date, request.board)
 
     if is_correct:
-        # Get puzzle difficulty
-        puzzle_data = generate_puzzle(today)
+        # Get puzzle difficulty for the puzzle date
+        puzzle_data = generate_puzzle(puzzle_date)
         difficulty = puzzle_data["difficulty"]
 
         # Mark as completed and update stats (preserve move_history and mistakes)
         move_history_dicts = [m.model_dump() for m in request.move_history] if request.move_history else None
         firestore.mark_completed(
             user_id=request.user_id,
-            puzzle_date=today,
+            puzzle_date=puzzle_date,
             time_seconds=request.time_seconds,
             difficulty=difficulty,
             mistakes=request.mistakes,

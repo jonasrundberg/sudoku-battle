@@ -89,8 +89,8 @@ export default function StartScreen({ userId, onPlay, onStatsClick, onLeaderboar
                 <h3 className="text-lg font-bold text-gray-900 mb-2">Today's Puzzle Complete!</h3>
                 <div className="flex items-center justify-center gap-1 mb-2">
                   {[0, 1, 2].map((i) => (
-                    <span key={i} className={`text-xl ${i < starsEarned ? 'text-yellow-500' : 'text-gray-300'}`}>
-                      ⭐
+                    <span key={i} className="text-2xl">
+                      {i < starsEarned ? '⭐' : '☆'}
                     </span>
                   ))}
                 </div>

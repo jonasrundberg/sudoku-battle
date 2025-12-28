@@ -430,6 +430,7 @@ function App() {
           onNotesToggle={() => setNotesMode(prev => !prev)}
           onClearAllNotes={() => setNotes({})}
           hasNotes={Object.keys(notes).length > 0}
+          board={board}
         />
 
         {/* Verification Error */}

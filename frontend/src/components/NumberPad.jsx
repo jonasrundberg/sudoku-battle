@@ -1,10 +1,36 @@
+import { useMemo } from 'react'
+
 /**
  * Number pad for entering values 1-9, toggling notes mode, and erasing.
  * Touch-friendly for mobile devices.
  */
 
-export default function NumberPad({ onNumberClick, onEraseClick, disabled, notesMode, onNotesToggle, onClearAllNotes, hasNotes }) {
+export default function NumberPad({ onNumberClick, onEraseClick, disabled, notesMode, onNotesToggle, onClearAllNotes, hasNotes, board }) {
   const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+  // Count occurrences of each digit on the board
+  // A digit is "complete" when all 9 instances are placed
+  const completedDigits = useMemo(() => {
+    if (!board) return new Set()
+    
+    const counts = {}
+    for (let row = 0; row < 9; row++) {
+      for (let col = 0; col < 9; col++) {
+        const val = board[row][col]
+        if (val >= 1 && val <= 9) {
+          counts[val] = (counts[val] || 0) + 1
+        }
+      }
+    }
+    
+    const completed = new Set()
+    for (let num = 1; num <= 9; num++) {
+      if (counts[num] === 9) {
+        completed.add(num)
+      }
+    }
+    return completed
+  }, [board])
 
   return (
     <div className="mt-2 w-full max-w-md px-2">
@@ -104,22 +130,27 @@ export default function NumberPad({ onNumberClick, onEraseClick, disabled, notes
       
       {/* Number buttons row */}
       <div className="flex justify-center gap-1">
-        {numbers.map((num) => (
-          <button
-            key={num}
-            type="button"
-            onClick={() => onNumberClick(num)}
-            disabled={disabled}
-            className={`
-              numpad-btn flex-1 min-w-0 aspect-square max-w-[44px]
-              ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
-              ${notesMode ? 'border-blue-300' : ''}
-            `}
-            aria-label={notesMode ? `Toggle note ${num}` : `Enter ${num}`}
-          >
-            {num}
-          </button>
-        ))}
+        {numbers.map((num) => {
+          const isComplete = completedDigits.has(num)
+          const isDisabled = disabled || isComplete
+          
+          return (
+            <button
+              key={num}
+              type="button"
+              onClick={() => onNumberClick(num)}
+              disabled={isDisabled}
+              className={`
+                numpad-btn flex-1 min-w-0 aspect-square max-w-[44px]
+                ${isDisabled ? 'opacity-30 cursor-not-allowed' : ''}
+                ${notesMode && !isComplete ? 'border-blue-300' : ''}
+              `}
+              aria-label={notesMode ? `Toggle note ${num}` : `Enter ${num}`}
+            >
+              {num}
+            </button>
+          )
+        })}
       </div>
     </div>
   )

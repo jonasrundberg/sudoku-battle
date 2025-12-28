@@ -277,7 +277,7 @@ export default function LeaderboardModal({ userId, onClose, onUsernameChange }) 
               {!hasUsername && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Your Name <span className="text-gray-400 font-normal">(optional)</span>
+                    Your Name
                   </label>
                   <input
                     type="text"
@@ -333,7 +333,7 @@ export default function LeaderboardModal({ userId, onClose, onUsernameChange }) 
               {!hasUsername && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Your Name <span className="text-gray-400 font-normal">(optional)</span>
+                    Your Name
                   </label>
                   <input
                     type="text"

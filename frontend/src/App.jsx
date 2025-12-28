@@ -330,6 +330,7 @@ function App() {
           onStatsClick={() => setShowStats(true)}
           onLeaderboardClick={() => setShowLeaderboard(true)}
           onAccountClick={() => setShowAccount(true)}
+          hasUsername={hasUsername}
         />
         {/* Modals */}
         {showStats && (

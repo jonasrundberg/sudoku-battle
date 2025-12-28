@@ -9,7 +9,7 @@ import { Link } from 'react-router-dom'
 import Header from './Header'
 import { getTodayStats, getFriendsCompletions, getProgress, getUserLeaderboards } from '../utils/api'
 
-export default function StartScreen({ userId, onPlay, onStatsClick, onLeaderboardClick, onAccountClick }) {
+export default function StartScreen({ userId, onPlay, onStatsClick, onLeaderboardClick, onAccountClick, hasUsername = true }) {
   const [stats, setStats] = useState(null)
   const [friends, setFriends] = useState([])
   const [leaderboards, setLeaderboards] = useState([])
@@ -57,6 +57,7 @@ export default function StartScreen({ userId, onPlay, onStatsClick, onLeaderboar
           onStatsClick={onStatsClick}
           onLeaderboardClick={onLeaderboardClick}
           onAccountClick={onAccountClick}
+          hasUsername={hasUsername}
         />
         <div className="flex-1 flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
@@ -72,6 +73,7 @@ export default function StartScreen({ userId, onPlay, onStatsClick, onLeaderboar
         onStatsClick={onStatsClick}
         onLeaderboardClick={onLeaderboardClick}
         onAccountClick={onAccountClick}
+        hasUsername={hasUsername}
       />
 
       {/* Main content */}

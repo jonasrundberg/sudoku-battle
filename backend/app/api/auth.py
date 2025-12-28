@@ -281,3 +281,28 @@ async def check_passkey_registered(user_id: str):
         "has_passkey": len(credentials) > 0,
         "credential_count": len(credentials),
     }
+
+
+class MergeAccountsRequest(BaseModel):
+    """Request to merge accounts after passkey login."""
+    source_user_id: str  # The local account to merge FROM
+    target_user_id: str  # The passkey account to merge INTO
+
+
+@router.post("/auth/merge")
+async def merge_accounts(request: MergeAccountsRequest):
+    """
+    Merge a local account into the logged-in passkey account.
+
+    Called after a successful passkey login when the user had
+    existing progress under a different local account.
+    """
+    if request.source_user_id == request.target_user_id:
+        return {"migrated": False, "reason": "same_account"}
+
+    result = firestore.merge_accounts(
+        source_user_id=request.source_user_id,
+        target_user_id=request.target_user_id,
+    )
+
+    return result

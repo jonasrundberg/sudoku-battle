@@ -300,6 +300,102 @@ def recalculate_user_stats(user_id: str, dry_run: bool = False) -> dict:
     return new_stats
 
 
+def merge_accounts(source_user_id: str, target_user_id: str) -> dict:
+    """
+    Merge all data from source account into target account.
+
+    This is called when a user logs in with a passkey to a different account
+    than their current local account. All progress, leaderboard memberships,
+    and results are migrated to preserve their work.
+
+    Args:
+        source_user_id: The local account to merge FROM (will be deleted)
+        target_user_id: The passkey account to merge INTO
+
+    Returns:
+        Summary of what was migrated
+    """
+    if source_user_id == target_user_id:
+        return {"migrated": False, "reason": "same_account"}
+
+    db = get_firestore_client()
+
+    # Check if source has any data worth migrating
+    source_user = db.collection("users").document(source_user_id).get()
+    if not source_user.exists:
+        return {"migrated": False, "reason": "source_not_found"}
+
+    migrated_progress = 0
+    skipped_progress = 0
+    migrated_results = 0
+    updated_leaderboards = 0
+
+    # 1. Migrate progress records
+    progress_docs = list(db.collection("progress").stream())
+    for doc in progress_docs:
+        if source_user_id in doc.id:
+            date_part = doc.id.replace(f"{source_user_id}_", "")
+            new_doc_id = f"{target_user_id}_{date_part}"
+
+            # Check if target already has progress for this date
+            existing = db.collection("progress").document(new_doc_id).get()
+            if existing.exists:
+                skipped_progress += 1
+            else:
+                # Move to new ID
+                data = doc.to_dict()
+                data["user_id"] = target_user_id
+                db.collection("progress").document(new_doc_id).set(data)
+                migrated_progress += 1
+
+            # Delete old record
+            doc.reference.delete()
+
+    # 2. Migrate leaderboard memberships
+    leaderboards = list(db.collection("leaderboards").stream())
+    for lb in leaderboards:
+        lb_data = lb.to_dict()
+        members = lb_data.get("members", [])
+
+        if source_user_id in members:
+            if target_user_id not in members:
+                members.append(target_user_id)
+            members.remove(source_user_id)
+            lb.reference.update({"members": members})
+            updated_leaderboards += 1
+
+    # 3. Migrate leaderboard results
+    results = list(db.collection("leaderboard_results").stream())
+    for result in results:
+        if source_user_id in result.id:
+            result_data = result.to_dict()
+            new_result_id = result.id.replace(source_user_id, target_user_id)
+
+            existing = db.collection("leaderboard_results").document(new_result_id).get()
+            if not existing.exists:
+                result_data["passkey"] = target_user_id
+                db.collection("leaderboard_results").document(new_result_id).set(result_data)
+                migrated_results += 1
+
+            result.reference.delete()
+
+    # 4. Recalculate stats for target account
+    recalculate_user_stats(target_user_id)
+
+    # 5. Delete source account
+    db.collection("users").document(source_user_id).delete()
+
+    return {
+        "migrated": True,
+        "source_user_id": source_user_id,
+        "target_user_id": target_user_id,
+        "progress_migrated": migrated_progress,
+        "progress_skipped": skipped_progress,
+        "leaderboards_updated": updated_leaderboards,
+        "results_migrated": migrated_results,
+    }
+
+
 def recalculate_all_user_stats(dry_run: bool = False) -> None:
     """
     Recalculate stats for all users.

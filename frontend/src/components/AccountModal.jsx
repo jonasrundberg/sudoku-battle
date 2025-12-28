@@ -12,6 +12,7 @@ import {
   startPasskeyLogin,
   finishPasskeyLogin,
   checkPasskeyRegistered,
+  mergeAccounts,
 } from '../utils/api'
 
 export default function AccountModal({ userId, onUserIdChange, onClose }) {
@@ -99,6 +100,19 @@ export default function AccountModal({ userId, onUserIdChange, onClose }) {
       credential.sessionId = sessionId
 
       const result = await finishPasskeyLogin(credential)
+
+      // If logging into a different account, merge the local account's data
+      if (result.user_id !== userId) {
+        try {
+          const mergeResult = await mergeAccounts(userId, result.user_id)
+          if (mergeResult.migrated) {
+            console.log('Account merged:', mergeResult)
+          }
+        } catch (mergeErr) {
+          // Log but don't fail - login still succeeded
+          console.warn('Account merge failed:', mergeErr)
+        }
+      }
 
       localStorage.setItem('sudoku_battle_user_id', result.user_id)
       onUserIdChange(result.user_id)

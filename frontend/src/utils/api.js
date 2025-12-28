@@ -169,6 +169,16 @@ export async function finishPasskeyLogin(credential) {
   })
 }
 
+export async function mergeAccounts(sourceUserId, targetUserId) {
+  return apiRequest('/auth/merge', {
+    method: 'POST',
+    body: JSON.stringify({
+      source_user_id: sourceUserId,
+      target_user_id: targetUserId,
+    }),
+  })
+}
+
 export async function checkPasskeyRegistered(userId) {
   return apiRequest(`/auth/check/${userId}`)
 }

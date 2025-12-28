@@ -14,8 +14,12 @@ from sudoku import Sudoku
 
 
 # Difficulty settings: (difficulty_name, empty_cell_percentage)
+# double entries for different drop rates
 DIFFICULTIES = [
     ("easy", 0.4),
+    ("easy", 0.4),
+    ("medium", 0.5),
+    ("medium", 0.5),
     ("medium", 0.5),
     ("hard", 0.6),
     ("expert", 0.7),

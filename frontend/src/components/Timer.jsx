@@ -79,7 +79,7 @@ export default function Timer({ time, isPaused, isCompleted, isFailed, onPauseTo
 
       {/* Difficulty and Lives */}
       <div className="flex items-center gap-4">
-        <span className="text-base text-gray-500 capitalize">
+        <span className="text-xs text-gray-500 uppercase">
           {difficulty}
         </span>
         <div className="flex items-center gap-0.5">

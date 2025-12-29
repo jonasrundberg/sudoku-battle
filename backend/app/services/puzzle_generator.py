@@ -17,7 +17,6 @@ from sudoku import Sudoku
 # double entries for different drop rates
 DIFFICULTIES = [
     ("easy", 0.4),
-    ("easy", 0.4),
     ("medium", 0.5),
     ("medium", 0.5),
     ("medium", 0.5),

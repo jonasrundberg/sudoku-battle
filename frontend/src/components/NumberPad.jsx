@@ -33,7 +33,7 @@ export default function NumberPad({ onNumberClick, onEraseClick, disabled, notes
   }, [board])
 
   return (
-    <div className="mt-2 w-full max-w-md px-2">
+    <div className="mt-2 w-full max-w-md">
       {/* Notes toggle and Erase button row */}
       <div className="flex justify-end gap-2 mb-2">
         {/* Clear all notes button - only show when there are notes */}

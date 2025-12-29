@@ -398,29 +398,30 @@ function App() {
         />
 
         {/* Sudoku Grid */}
-        <div className={`w-full max-w-md ${isPaused || isFailed ? 'opacity-20 pointer-events-none' : ''}`}>
-          <SudokuGrid
-            board={board}
-            originalBoard={originalBoard}
-            conflicts={conflicts}
-            wrongCells={wrongCells}
-            selectedCell={selectedCell}
-            onCellClick={setSelectedCell}
-            mistakeCell={lastMistakeCell}
-            notes={notes}
-          />
-        </div>
-
-        {isPaused && !isCompleted && !isFailed && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80">
-            <button
-              onClick={handlePauseToggle}
-              className="px-6 py-3 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors"
-            >
-              Resume Game
-            </button>
+        <div className="w-full max-w-md relative">
+          <div className={isPaused || isFailed ? 'opacity-0' : ''}>
+            <SudokuGrid
+              board={board}
+              originalBoard={originalBoard}
+              conflicts={conflicts}
+              wrongCells={wrongCells}
+              selectedCell={selectedCell}
+              onCellClick={setSelectedCell}
+              mistakeCell={lastMistakeCell}
+              notes={notes}
+            />
           </div>
-        )}
+          {isPaused && !isCompleted && !isFailed && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <button
+                onClick={handlePauseToggle}
+                className="px-6 py-3 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors shadow-lg"
+              >
+                Resume Game
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Number Pad */}
         <NumberPad

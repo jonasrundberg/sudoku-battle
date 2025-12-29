@@ -301,10 +301,14 @@ export default function ReplayPage() {
             <div className="text-2xl font-mono font-bold text-gray-700">
               {formatTime(displayTime)}
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500">Stars:</span>
+            <div className="flex items-center gap-0.5">
               {[0, 1, 2].map((i) => (
-                <span key={i} className={mistakes > i ? 'text-gray-300' : 'text-yellow-500'}>
+                <span 
+                  key={i} 
+                  className={`text-lg transition-all duration-300 ${
+                    i < 3 - mistakes ? '' : 'grayscale opacity-40'
+                  }`}
+                >
                   ⭐
                 </span>
               ))}

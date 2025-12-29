@@ -129,7 +129,7 @@ export default function NumberPad({ onNumberClick, onEraseClick, disabled, notes
       </div>
       
       {/* Number buttons row */}
-      <div className="flex justify-center gap-1">
+      <div className="flex gap-1">
         {numbers.map((num) => {
           const isComplete = completedDigits.has(num)
           const isDisabled = disabled || isComplete
@@ -141,7 +141,7 @@ export default function NumberPad({ onNumberClick, onEraseClick, disabled, notes
               onClick={() => onNumberClick(num)}
               disabled={isDisabled}
               className={`
-                numpad-btn flex-1 min-w-0 aspect-square max-w-[44px]
+                numpad-btn flex-1 min-w-0 aspect-square
                 ${isDisabled ? 'opacity-30 cursor-not-allowed' : ''}
                 ${notesMode && !isComplete ? 'border-blue-300' : ''}
               `}

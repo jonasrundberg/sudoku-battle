@@ -191,6 +191,62 @@ function App() {
     })
   }, [])
 
+  // Remove a specific number from notes in the same row, column, and 3x3 box
+  const removeNoteFromRelatedCells = useCallback((row, col, num) => {
+    const boxStartRow = Math.floor(row / 3) * 3
+    const boxStartCol = Math.floor(col / 3) * 3
+
+    setNotes(prev => {
+      const newNotes = { ...prev }
+      
+      // Check all cells
+      for (const key of Object.keys(newNotes)) {
+        const [r, c] = key.split(',').map(Number)
+        
+        // Check if in same row, column, or box
+        const inSameRow = r === row
+        const inSameCol = c === col
+        const inSameBox = r >= boxStartRow && r < boxStartRow + 3 && 
+                          c >= boxStartCol && c < boxStartCol + 3
+        
+        if (inSameRow || inSameCol || inSameBox) {
+          const cellNotes = newNotes[key]
+          if (cellNotes && cellNotes.includes(num)) {
+            const filtered = cellNotes.filter(n => n !== num)
+            if (filtered.length === 0) {
+              delete newNotes[key]
+            } else {
+              newNotes[key] = filtered
+            }
+          }
+        }
+      }
+      
+      return newNotes
+    })
+  }, [])
+
+  // Remove a number from all notes (when that number is complete - all 9 placed)
+  const removeNoteFromAllCells = useCallback((num) => {
+    setNotes(prev => {
+      const newNotes = { ...prev }
+      
+      for (const key of Object.keys(newNotes)) {
+        const cellNotes = newNotes[key]
+        if (cellNotes && cellNotes.includes(num)) {
+          const filtered = cellNotes.filter(n => n !== num)
+          if (filtered.length === 0) {
+            delete newNotes[key]
+          } else {
+            newNotes[key] = filtered
+          }
+        }
+      }
+      
+      return newNotes
+    })
+  }, [])
+
   // Handle number input
   const handleNumberInput = useCallback((num) => {
     if (selectedCell && !isPaused && !isCompleted && !isFailed) {
@@ -229,9 +285,26 @@ function App() {
           // Save progress with updated mistakes - use returned values to avoid stale closure
           saveProgress(result.newBoard, time, false, result.newMistakes, result.newMoveHistory)
         }
+      } else {
+        // Correct number placed - remove from related notes
+        removeNoteFromRelatedCells(selectedCell.row, selectedCell.col, num)
+        
+        // Check if this number is now complete (all 9 placed)
+        // Count occurrences in the new board
+        let count = 0
+        for (let r = 0; r < 9; r++) {
+          for (let c = 0; c < 9; c++) {
+            if (result.newBoard[r][c] === num) {
+              count++
+            }
+          }
+        }
+        if (count === 9) {
+          removeNoteFromAllCells(num)
+        }
       }
     }
-  }, [selectedCell, isPaused, isCompleted, isFailed, notesMode, board, originalBoard, handleCellInput, pause, saveProgress, time, toggleNote, clearNotesForCell])
+  }, [selectedCell, isPaused, isCompleted, isFailed, notesMode, board, originalBoard, handleCellInput, pause, saveProgress, time, toggleNote, clearNotesForCell, removeNoteFromRelatedCells, removeNoteFromAllCells])
 
   // Handle erase
   const handleEraseClick = useCallback(() => {

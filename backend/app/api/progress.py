@@ -43,13 +43,20 @@ async def get_progress(user_id: str):
 @router.post("/progress", response_model=ProgressResponse)
 async def save_progress(request: ProgressRequest):
     """
-    Save user's progress on today's puzzle.
+    Save user's progress on a puzzle.
 
     Called periodically (auto-save) and when pausing.
+    Uses the puzzle_date from the request to handle midnight edge case.
     """
     # Validate board dimensions
     if len(request.board) != 9 or any(len(row) != 9 for row in request.board):
         raise HTTPException(status_code=400, detail="Invalid board dimensions")
+
+    # Parse puzzle_date from request
+    try:
+        puzzle_date = date.fromisoformat(request.puzzle_date)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid puzzle_date format. Use YYYY-MM-DD")
 
     # Ensure user exists
     firestore.get_or_create_user(request.user_id)
@@ -62,7 +69,7 @@ async def save_progress(request: ProgressRequest):
 
     progress = firestore.save_progress(
         user_id=request.user_id,
-        puzzle_date=date.today(),
+        puzzle_date=puzzle_date,
         board=request.board,
         time_seconds=request.time_seconds,
         is_paused=request.is_paused,
@@ -164,18 +171,14 @@ async def verify_puzzle(request: VerifyRequest):
     if len(request.board) != 9 or any(len(row) != 9 for row in request.board):
         raise HTTPException(status_code=400, detail="Invalid board dimensions")
 
-    # Get existing progress to determine puzzle date
-    # This handles the midnight edge case: if user started puzzle before midnight
-    # but submits after midnight, we verify against the puzzle they actually played
-    existing_progress = firestore.get_progress(request.user_id, date.today())
-
-    # Determine puzzle date from progress, falling back to today
-    if existing_progress:
-        puzzle_date = date.fromisoformat(existing_progress["date"])
-    else:
-        puzzle_date = date.today()
+    # Parse puzzle_date from request
+    try:
+        puzzle_date = date.fromisoformat(request.puzzle_date)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid puzzle_date format. Use YYYY-MM-DD")
 
     # Check if already completed
+    existing_progress = firestore.get_progress(request.user_id, puzzle_date)
     if existing_progress and existing_progress.get("is_completed"):
         return VerifyResponse(
             is_correct=True,

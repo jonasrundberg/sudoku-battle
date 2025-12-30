@@ -47,11 +47,12 @@ export async function getProgress(userId) {
   return apiRequest(`/progress/${userId}`)
 }
 
-export async function saveProgress(userId, board, timeSeconds, isPaused = false, mistakes = 0, moveHistory = []) {
+export async function saveProgress(userId, puzzleDate, board, timeSeconds, isPaused = false, mistakes = 0, moveHistory = []) {
   return apiRequest('/progress', {
     method: 'POST',
     body: JSON.stringify({
       user_id: userId,
+      puzzle_date: puzzleDate,
       board,
       time_seconds: timeSeconds,
       is_paused: isPaused,
@@ -61,11 +62,12 @@ export async function saveProgress(userId, board, timeSeconds, isPaused = false,
   })
 }
 
-export async function verifySolution(userId, board, timeSeconds, mistakes = 0, moveHistory = []) {
+export async function verifySolution(userId, puzzleDate, board, timeSeconds, mistakes = 0, moveHistory = []) {
   return apiRequest('/verify', {
     method: 'POST',
     body: JSON.stringify({
       user_id: userId,
+      puzzle_date: puzzleDate,
       board,
       time_seconds: timeSeconds,
       mistakes,

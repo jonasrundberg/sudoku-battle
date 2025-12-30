@@ -91,15 +91,15 @@ export function useSudoku(userId) {
   // Save progress to server
   const saveProgressToServer = useCallback(async (currentBoard, timeSeconds, isPaused = false, currentMistakes = 0, currentMoveHistory = null) => {
     if (!userId || isCompleted || isFailed) return
-    // Don't save if board is not loaded yet
-    if (!currentBoard || currentBoard.length !== 9) return
+    // Don't save if board is not loaded yet or no date
+    if (!currentBoard || currentBoard.length !== 9 || !date) return
 
     try {
-      await saveProgress(userId, currentBoard, timeSeconds, isPaused, currentMistakes, currentMoveHistory || moveHistory)
+      await saveProgress(userId, date, currentBoard, timeSeconds, isPaused, currentMistakes, currentMoveHistory || moveHistory)
     } catch (error) {
       console.error('Failed to save progress:', error)
     }
-  }, [userId, isCompleted, isFailed, moveHistory])
+  }, [userId, date, isCompleted, isFailed, moveHistory])
 
   // Handle cell input - returns true if correct, false if wrong
   // Also returns newBoard and newMoveHistory to avoid stale closure issues when saving
@@ -207,10 +207,10 @@ export function useSudoku(userId) {
 
   // Verify and complete puzzle
   const verifyAndComplete = useCallback(async (timeSeconds) => {
-    if (!userId || isCompleted || isFailed) return { is_correct: false, message: 'Already completed or failed' }
+    if (!userId || isCompleted || isFailed || !date) return { is_correct: false, message: 'Already completed or failed' }
 
     try {
-      const result = await verifySolution(userId, board, timeSeconds, mistakes, moveHistory)
+      const result = await verifySolution(userId, date, board, timeSeconds, mistakes, moveHistory)
       
       if (result.is_correct) {
         setIsCompleted(true)
@@ -221,7 +221,7 @@ export function useSudoku(userId) {
       console.error('Failed to verify solution:', error)
       return { is_correct: false, message: 'Verification failed' }
     }
-  }, [userId, board, isCompleted, isFailed, mistakes, moveHistory])
+  }, [userId, date, board, isCompleted, isFailed, mistakes, moveHistory])
 
   return {
     // Data

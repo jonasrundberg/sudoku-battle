@@ -41,6 +41,7 @@ class PuzzleResponse(BaseModel):
 class ProgressRequest(BaseModel):
     """Request to save user progress."""
     user_id: str = Field(..., min_length=1, description="User's unique ID")
+    puzzle_date: str = Field(..., description="Date of the puzzle being played (YYYY-MM-DD)")
     board: list[list[int]] = Field(..., description="Current board state (0 = empty)")
     time_seconds: int = Field(..., ge=0, description="Time spent in seconds")
     is_paused: bool = Field(default=False, description="Whether the game is paused")
@@ -78,6 +79,7 @@ class ReplayResponse(BaseModel):
 class VerifyRequest(BaseModel):
     """Request to verify a completed puzzle."""
     user_id: str = Field(..., min_length=1, description="User's unique ID")
+    puzzle_date: str = Field(..., description="Date of the puzzle being verified (YYYY-MM-DD)")
     board: list[list[int]] = Field(..., description="Completed board to verify")
     time_seconds: int = Field(..., ge=0, description="Completion time in seconds")
     mistakes: int = Field(default=0, ge=0, le=3, description="Number of mistakes made")

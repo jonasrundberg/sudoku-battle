@@ -17,12 +17,12 @@ class MoveRecord(BaseModel):
 
 
 class ReplayMoveRecord(BaseModel):
-    """A move record for replay - excludes actual value to prevent cheating."""
+    """A move record for replay - includes actual values since only users who completed can view."""
     row: int = Field(..., ge=0, le=8, description="Row index (0-8)")
     col: int = Field(..., ge=0, le=8, description="Column index (0-8)")
+    value: int = Field(..., ge=0, le=9, description="Value entered (0 = erase)")
     time_ms: int = Field(..., ge=0, description="Milliseconds since game start")
     is_correct: bool = Field(..., description="Whether this move was correct")
-    is_erase: bool = Field(default=False, description="Whether this was an erase action")
 
 
 # ============ Puzzle ============

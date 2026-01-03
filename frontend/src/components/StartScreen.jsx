@@ -196,30 +196,59 @@ export default function StartScreen({ userId, onPlay, onStatsClick, onLeaderboar
             <div className="mt-6 pt-4 border-t border-gray-100">
               <h3 className="text-sm font-medium text-gray-500 mb-3">
                 Friends who played today
-                <span className="text-xs text-gray-400 ml-2">(tap to watch)</span>
+                {(isCompleted || isFailed) && (
+                  <span className="text-xs text-gray-400 ml-2">(tap to watch)</span>
+                )}
               </h3>
               <div className="space-y-2">
-                {friends.map((friend) => (
-                  <Link
-                    key={friend.user_id}
-                    to={`/replay/${friend.user_id}`}
-                    className={`w-full flex items-center justify-between py-2 px-3 rounded-lg transition-colors cursor-pointer ${
-                      friend.is_failed 
-                        ? 'bg-red-50 hover:bg-red-100 active:bg-red-200' 
-                        : 'bg-green-50 hover:bg-green-100 active:bg-green-200'
-                    }`}
-                  >
-                    <span className="font-medium text-gray-800 flex items-center gap-2">
-                      {friend.username}
-                      <span className="text-xs text-gray-400">▶</span>
-                    </span>
-                    {friend.is_failed ? (
-                      <span className="text-red-500 font-bold">✗</span>
-                    ) : (
-                      <span className="text-green-600 font-mono">{formatTime(friend.time_seconds)}</span>
-                    )}
-                  </Link>
-                ))}
+                {friends.map((friend) => {
+                  // Only allow replay links if user has completed/failed
+                  const canWatchReplay = isCompleted || isFailed
+                  
+                  const content = (
+                    <>
+                      <span className="font-medium text-gray-800 flex items-center gap-2">
+                        {friend.username}
+                        {canWatchReplay && <span className="text-xs text-gray-400">▶</span>}
+                      </span>
+                      {friend.is_failed ? (
+                        <span className="text-red-500 font-bold">✗</span>
+                      ) : (
+                        <span className="text-green-600 font-mono">{formatTime(friend.time_seconds)}</span>
+                      )}
+                    </>
+                  )
+                  
+                  if (canWatchReplay) {
+                    return (
+                      <Link
+                        key={friend.user_id}
+                        to={`/replay/${friend.user_id}`}
+                        className={`w-full flex items-center justify-between py-2 px-3 rounded-lg transition-colors cursor-pointer ${
+                          friend.is_failed 
+                            ? 'bg-red-50 hover:bg-red-100 active:bg-red-200' 
+                            : 'bg-green-50 hover:bg-green-100 active:bg-green-200'
+                        }`}
+                      >
+                        {content}
+                      </Link>
+                    )
+                  }
+                  
+                  // Not completed - show as non-clickable div
+                  return (
+                    <div
+                      key={friend.user_id}
+                      className={`w-full flex items-center justify-between py-2 px-3 rounded-lg ${
+                        friend.is_failed 
+                          ? 'bg-red-50' 
+                          : 'bg-green-50'
+                      }`}
+                    >
+                      {content}
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )}

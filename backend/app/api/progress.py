@@ -133,9 +133,9 @@ async def get_replay(
     """
     Get replay data for a completed game.
 
-    - If user_id is provided, verifies the user shares a leaderboard with target
+    - Requires user_id to have completed today's puzzle (failed or successful)
     - If date is provided, gets replay for that specific date
-    - Replays are only available for completed or failed games
+    - Replays include actual values since only users who completed can view
     """
     # Determine which date to use
     if replay_date:
@@ -145,6 +145,20 @@ async def get_replay(
             raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
     else:
         puzzle_date = date.today()
+
+    # For today's puzzles, verify the requesting user has completed their puzzle
+    if puzzle_date == date.today() and user_id:
+        requesting_user_progress = firestore.get_progress(user_id, date.today())
+        if not requesting_user_progress:
+            raise HTTPException(
+                status_code=403,
+                detail="You must complete today's puzzle before watching replays"
+            )
+        if not requesting_user_progress.get("is_completed") and not requesting_user_progress.get("is_failed"):
+            raise HTTPException(
+                status_code=403,
+                detail="You must complete today's puzzle before watching replays"
+            )
 
     # If user_id provided, verify friendship (optional - allows public replay links)
     if user_id:
@@ -168,14 +182,14 @@ async def get_replay(
     # Get puzzle for the replay date
     puzzle_data = generate_puzzle(puzzle_date)
 
-    # Transform move history to strip out actual values (prevent cheating)
-    safe_move_history = [
+    # Include actual move values - safe since only users who completed can view replays
+    move_history_with_values = [
         {
             "row": move.get("row"),
             "col": move.get("col"),
+            "value": move.get("value", 0),
             "time_ms": move.get("time_ms"),
             "is_correct": move.get("is_correct"),
-            "is_erase": move.get("value", 0) == 0,
         }
         for move in replay_data.get("move_history", [])
     ]
@@ -187,7 +201,7 @@ async def get_replay(
         difficulty=puzzle_data["difficulty"],
         puzzle=puzzle_data["puzzle"],
         time_seconds=replay_data["time_seconds"],
-        move_history=safe_move_history,
+        move_history=move_history_with_values,
         is_completed=replay_data["is_completed"],
         is_failed=replay_data.get("is_failed", False),
     )

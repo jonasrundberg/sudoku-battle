@@ -4,7 +4,7 @@
  */
 
 import { useState, useCallback, useRef } from 'react'
-import { getTodayPuzzle, getProgress, saveProgress, verifySolution } from '../utils/api'
+import { getTodayPuzzle, getProgress, saveProgress, verifySolution, validateCell } from '../utils/api'
 import { findConflicts } from '../utils/validation'
 
 const MAX_MISTAKES = 3
@@ -28,6 +28,7 @@ export function useSudoku(userId) {
   const [conflicts, setConflicts] = useState([])
   const [wrongCells, setWrongCells] = useState(new Set()) // Track cells with wrong values
   const [selectedCell, setSelectedCell] = useState(null)
+  const [isValidating, setIsValidating] = useState(false) // Track if we're waiting for validation
 
   // Move history for replay functionality
   const [moveHistory, setMoveHistory] = useState([])
@@ -104,69 +105,83 @@ export function useSudoku(userId) {
   // Handle cell input - returns true if correct, false if wrong
   // Also returns newBoard and newMoveHistory to avoid stale closure issues when saving
   // currentTimeMs is passed from the timer to ensure accurate time tracking (excludes paused time)
-  const handleCellInput = useCallback((row, col, value, currentTimeMs = 0) => {
+  // Now uses server-side validation to properly handle puzzles with multiple valid solutions
+  const handleCellInput = useCallback(async (row, col, value, currentTimeMs = 0) => {
     // Don't allow editing original (given) cells
     if (originalBoard[row][col] !== 0) return { valid: false }
     if (isCompleted || isFailed) return { valid: false }
+    if (isValidating) return { valid: false } // Prevent double-clicks during validation
 
-    // Check if the value is correct against solution
-    const isCorrect = solution[row][col] === value
     const cellKey = `${row},${col}`
     
-    // Record move for replay (use passed time to exclude paused time)
-    const newMove = {
-      row,
-      col,
-      value,
-      time_ms: currentTimeMs,
-      is_correct: isCorrect,
-    }
-    
-    // Calculate new board
+    // Calculate new board (optimistically update UI)
     const newBoard = board.map(r => [...r])
     newBoard[row][col] = value
     
-    // Calculate new move history
-    const newMoveHistory = [...moveHistory, newMove]
-    
-    if (!isCorrect) {
-      // Update state
-      setMoveHistory(newMoveHistory)
-      
-      // Wrong answer - increment mistakes and place the wrong number
-      const newMistakes = mistakes + 1
-      setMistakes(newMistakes)
-      
-      // Place wrong number on board and mark as wrong
-      setBoard(newBoard)
-      setConflicts(findConflicts(newBoard))
-      
-      // Add to wrong cells set
-      setWrongCells(prev => new Set([...prev, cellKey]))
-      
-      // Check if game over
-      if (newMistakes >= MAX_MISTAKES) {
-        setIsFailed(true)
-        return { valid: false, mistake: true, gameOver: true, newMistakes, newBoard, newMoveHistory }
-      }
-      
-      return { valid: false, mistake: true, gameOver: false, newMistakes, newBoard, newMoveHistory }
-    }
-
-    // Correct answer - update state
-    setMoveHistory(newMoveHistory)
+    // Immediately update the board and show the value
     setBoard(newBoard)
     setConflicts(findConflicts(newBoard))
+    setIsValidating(true)
     
-    // Remove from wrong cells if corrected
-    setWrongCells(prev => {
-      const newSet = new Set(prev)
-      newSet.delete(cellKey)
-      return newSet
-    })
-    
-    return { valid: true, mistake: false, gameOver: false, newBoard, newMoveHistory }
-  }, [originalBoard, solution, isCompleted, isFailed, mistakes, board, moveHistory])
+    try {
+      // Validate with server (handles multiple valid solutions)
+      const validation = await validateCell(date, board, row, col, value)
+      const isCorrect = validation.is_valid
+      
+      // Record move for replay
+      const newMove = {
+        row,
+        col,
+        value,
+        time_ms: currentTimeMs,
+        is_correct: isCorrect,
+      }
+      
+      const newMoveHistory = [...moveHistory, newMove]
+      
+      if (!isCorrect) {
+        // Update state
+        setMoveHistory(newMoveHistory)
+        
+        // Wrong answer - increment mistakes
+        const newMistakes = mistakes + 1
+        setMistakes(newMistakes)
+        
+        // Add to wrong cells set
+        setWrongCells(prev => new Set([...prev, cellKey]))
+        
+        setIsValidating(false)
+        
+        // Check if game over
+        if (newMistakes >= MAX_MISTAKES) {
+          setIsFailed(true)
+          return { valid: false, mistake: true, gameOver: true, newMistakes, newBoard, newMoveHistory }
+        }
+        
+        return { valid: false, mistake: true, gameOver: false, newMistakes, newBoard, newMoveHistory }
+      }
+
+      // Correct answer - update state
+      setMoveHistory(newMoveHistory)
+      
+      // Remove from wrong cells if corrected
+      setWrongCells(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(cellKey)
+        return newSet
+      })
+      
+      setIsValidating(false)
+      return { valid: true, mistake: false, gameOver: false, newBoard, newMoveHistory }
+    } catch (error) {
+      console.error('Failed to validate cell:', error)
+      // On error, revert the cell
+      setBoard(board)
+      setConflicts(findConflicts(board))
+      setIsValidating(false)
+      return { valid: false, error: true }
+    }
+  }, [originalBoard, date, isCompleted, isFailed, isValidating, mistakes, board, moveHistory])
 
   // Handle erase
   // currentTimeMs is passed from the timer to ensure accurate time tracking (excludes paused time)
@@ -242,6 +257,7 @@ export function useSudoku(userId) {
     selectedCell,
     setSelectedCell,
     moveHistory,
+    isValidating,
     
     // Actions
     handleCellInput,

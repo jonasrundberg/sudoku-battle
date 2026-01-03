@@ -76,6 +76,21 @@ class ReplayResponse(BaseModel):
 
 # ============ Verification ============
 
+class ValidateCellRequest(BaseModel):
+    """Request to validate a single cell input."""
+    puzzle_date: str = Field(..., description="Date of the puzzle (YYYY-MM-DD)")
+    board: list[list[int]] = Field(..., description="Current board state before the move")
+    row: int = Field(..., ge=0, le=8, description="Row index (0-8)")
+    col: int = Field(..., ge=0, le=8, description="Column index (0-8)")
+    value: int = Field(..., ge=1, le=9, description="Value to place (1-9)")
+
+
+class ValidateCellResponse(BaseModel):
+    """Response from cell validation."""
+    is_valid: bool = Field(..., description="Whether the value is valid (leads to solvable puzzle)")
+    message: str = Field(default="", description="Optional message")
+
+
 class VerifyRequest(BaseModel):
     """Request to verify a completed puzzle."""
     user_id: str = Field(..., min_length=1, description="User's unique ID")

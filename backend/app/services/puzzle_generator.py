@@ -110,6 +110,120 @@ def generate_puzzle(puzzle_date: date) -> dict:
     }
 
 
+def is_valid_placement(board: list[list[int]], row: int, col: int, value: int) -> bool:
+    """
+    Check if placing a value at (row, col) is valid according to sudoku rules.
+    
+    Does NOT check if the puzzle is still solvable, just that the placement
+    doesn't immediately violate row/column/box constraints.
+    
+    Args:
+        board: Current 9x9 grid
+        row: Row index (0-8)
+        col: Column index (0-8) 
+        value: Value to check (1-9)
+    
+    Returns:
+        True if placement doesn't conflict with existing values
+    """
+    # Check row
+    for c in range(9):
+        if c != col and board[row][c] == value:
+            return False
+    
+    # Check column
+    for r in range(9):
+        if r != row and board[r][col] == value:
+            return False
+    
+    # Check 3x3 box
+    box_row_start = (row // 3) * 3
+    box_col_start = (col // 3) * 3
+    for r in range(box_row_start, box_row_start + 3):
+        for c in range(box_col_start, box_col_start + 3):
+            if (r != row or c != col) and board[r][c] == value:
+                return False
+    
+    return True
+
+
+def solve_sudoku(board: list[list[int]]) -> list[list[int]] | None:
+    """
+    Solve a sudoku puzzle using backtracking.
+    
+    Args:
+        board: 9x9 grid with 0 for empty cells
+        
+    Returns:
+        A valid solution, or None if unsolvable
+    """
+    # Make a copy to avoid modifying the original
+    grid = [row[:] for row in board]
+    
+    def find_empty():
+        """Find the next empty cell."""
+        for r in range(9):
+            for c in range(9):
+                if grid[r][c] == 0:
+                    return (r, c)
+        return None
+    
+    def solve():
+        """Recursive backtracking solver."""
+        pos = find_empty()
+        if pos is None:
+            return True  # Puzzle solved
+        
+        row, col = pos
+        for num in range(1, 10):
+            if is_valid_placement(grid, row, col, num):
+                grid[row][col] = num
+                if solve():
+                    return True
+                grid[row][col] = 0
+        
+        return False
+    
+    if solve():
+        return grid
+    return None
+
+
+def is_solvable_with_value(puzzle: list[list[int]], current_board: list[list[int]], 
+                            row: int, col: int, value: int) -> bool:
+    """
+    Check if placing a value at (row, col) still allows the puzzle to be solved.
+    
+    This is the key function for validating user inputs in puzzles that may
+    have multiple valid solutions.
+    
+    Args:
+        puzzle: Original puzzle (to know which cells were given)
+        current_board: User's current board state
+        row: Row to place value
+        col: Column to place value
+        value: Value to place
+        
+    Returns:
+        True if the puzzle is still solvable after placing this value
+    """
+    # Don't allow changing given cells
+    if puzzle[row][col] != 0:
+        return puzzle[row][col] == value
+    
+    # Quick check: does it conflict with existing values?
+    if not is_valid_placement(current_board, row, col, value):
+        return False
+    
+    # Create a board with the new value placed
+    test_board = [r[:] for r in current_board]
+    test_board[row][col] = value
+    
+    # Try to solve it
+    solution = solve_sudoku(test_board)
+    return solution is not None
+
+
 def is_valid_complete_sudoku(board: list[list[int]]) -> bool:
     """
     Check if a board is a complete, valid sudoku solution.

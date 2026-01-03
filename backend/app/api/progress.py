@@ -7,11 +7,13 @@ from app.models.schemas import (
     ProgressRequest,
     ProgressResponse,
     ReplayResponse,
+    ValidateCellRequest,
+    ValidateCellResponse,
     VerifyRequest,
     VerifyResponse,
 )
 from app.services import firestore
-from app.services.puzzle_generator import verify_solution, generate_puzzle
+from app.services.puzzle_generator import verify_solution, generate_puzzle, is_solvable_with_value
 
 router = APIRouter()
 
@@ -88,6 +90,37 @@ async def save_progress(request: ProgressRequest):
         mistakes=progress.get("mistakes", 0),
         is_failed=progress.get("is_failed", False),
         move_history=progress.get("move_history", []),
+    )
+
+
+@router.post("/validate-cell", response_model=ValidateCellResponse)
+async def validate_cell(request: ValidateCellRequest):
+    """
+    Validate if a cell value is correct (leads to a solvable puzzle).
+
+    This properly handles puzzles with multiple valid solutions by checking
+    if the puzzle can still be solved after placing the value.
+    """
+    # Validate board dimensions
+    if len(request.board) != 9 or any(len(row) != 9 for row in request.board):
+        raise HTTPException(status_code=400, detail="Invalid board dimensions")
+
+    # Parse puzzle_date from request
+    try:
+        puzzle_date = date.fromisoformat(request.puzzle_date)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid puzzle_date format. Use YYYY-MM-DD")
+
+    # Get the original puzzle
+    puzzle_data = generate_puzzle(puzzle_date)
+    puzzle = puzzle_data["puzzle"]
+
+    # Check if this value leads to a solvable puzzle
+    is_valid = is_solvable_with_value(puzzle, request.board, request.row, request.col, request.value)
+
+    return ValidateCellResponse(
+        is_valid=is_valid,
+        message="" if is_valid else "This value doesn't lead to a valid solution"
     )
 
 

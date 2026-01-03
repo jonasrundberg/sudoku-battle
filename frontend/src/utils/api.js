@@ -76,6 +76,23 @@ export async function verifySolution(userId, puzzleDate, board, timeSeconds, mis
   })
 }
 
+/**
+ * Validate if a cell value is correct (leads to a solvable puzzle).
+ * This properly handles puzzles with multiple valid solutions.
+ */
+export async function validateCell(puzzleDate, board, row, col, value) {
+  return apiRequest('/validate-cell', {
+    method: 'POST',
+    body: JSON.stringify({
+      puzzle_date: puzzleDate,
+      board,
+      row,
+      col,
+      value,
+    }),
+  })
+}
+
 // ============ Replay ============
 
 export async function getReplay(targetUserId, userId, date = null) {

@@ -248,7 +248,7 @@ function App() {
   }, [])
 
   // Handle number input
-  const handleNumberInput = useCallback((num) => {
+  const handleNumberInput = useCallback(async (num) => {
     if (selectedCell && !isPaused && !isCompleted && !isFailed) {
       // Check if cell is a given (original) cell - can't edit those
       if (originalBoard && originalBoard[selectedCell.row][selectedCell.col] !== 0) {
@@ -268,8 +268,14 @@ function App() {
       clearNotesForCell(selectedCell.row, selectedCell.col)
       
       // Pass time * 1000 to get accurate time_ms (excludes paused time)
-      const result = handleCellInput(selectedCell.row, selectedCell.col, num, time * 1000)
+      const result = await handleCellInput(selectedCell.row, selectedCell.col, num, time * 1000)
       setVerificationError(null) // Clear error when user makes changes
+      
+      // Handle error from validation
+      if (result.error) {
+        console.error('Validation failed')
+        return
+      }
       
       if (result.mistake) {
         // Show mistake feedback

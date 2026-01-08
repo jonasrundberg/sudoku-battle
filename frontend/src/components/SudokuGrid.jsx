@@ -27,6 +27,14 @@ export default function SudokuGrid({
     ? board[selectedCell.row][selectedCell.col]
     : null
 
+  // Check if an empty cell has the selected number in its notes
+  const hasMatchingNote = (row, col) => {
+    if (!selectedValue || selectedValue === 0) return false
+    if (board[row][col] !== 0) return false // Only for empty cells
+    const cellNotes = notes[`${row},${col}`] || []
+    return cellNotes.includes(selectedValue)
+  }
+
   // Check if a cell is in the same row or column as selected (no 3x3 box, like sudoku.com)
   const isHighlighted = (row, col) => {
     if (!selectedCell) return false
@@ -66,6 +74,7 @@ export default function SudokuGrid({
                 selectedValue !== 0 &&
                 cellValue === selectedValue
               }
+              hasMatchingNote={hasMatchingNote(rowIndex, colIndex)}
               isMistake={
                 mistakeCell?.row === rowIndex && mistakeCell?.col === colIndex
               }

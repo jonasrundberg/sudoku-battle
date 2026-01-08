@@ -12,6 +12,7 @@ function Cell({
   isHighlighted,
   isConflict,
   isSameNumber,
+  hasMatchingNote,
   isMistake,
   isWrong,
   maskValue = false,
@@ -53,6 +54,8 @@ function Cell({
     bgStyle = { backgroundColor: '#fee2e2' } // red-100
   } else if (isSameNumber && value !== 0) {
     bgStyle = { backgroundColor: '#dbeafe' } // blue-100
+  } else if (hasMatchingNote) {
+    bgStyle = { backgroundColor: '#fef9c3' } // yellow-100 - subtle note highlight
   } else if (isHighlighted) {
     bgStyle = { backgroundColor: '#eff6ff' } // blue-50 (original)
   }
@@ -115,6 +118,7 @@ export default memo(Cell, (prevProps, nextProps) => {
     prevProps.isHighlighted === nextProps.isHighlighted &&
     prevProps.isConflict === nextProps.isConflict &&
     prevProps.isSameNumber === nextProps.isSameNumber &&
+    prevProps.hasMatchingNote === nextProps.hasMatchingNote &&
     prevProps.isMistake === nextProps.isMistake &&
     prevProps.isWrong === nextProps.isWrong &&
     prevProps.maskValue === nextProps.maskValue &&
